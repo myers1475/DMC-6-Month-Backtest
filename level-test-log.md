@@ -3,6 +3,8 @@
 Purpose: measure how often a level holds on each visit, without assuming the answer.
 Levels hold twice often, but that can't be counted on, so the count is the evidence.
 
+**Window:** MNQ, Mar 26 2026 → Sep 26 2026 (6 months forward from Session 1's start).
+
 ## Definitions
 
 - **Touch** = only wicks reach the level on the judging frame; no body does.
