@@ -1,0 +1,5 @@
+﻿Trade number,Type,Date and time,Signal,Price USDT,Size (qty),Size (value),Net PnL USDT,Return %,Commission USDT,Favorable excursion USDT,Favorable excursion %,Adverse excursion USDT,Adverse excursion %,Cumulative PnL USDT,Cumulative PnL %,Duration (bars)
+1,Exit long,2026-04-05 16:00,Close position,69002.4,1,69002.4,0,0.00,0,0,0.00,0,0.00,0,0.00,0
+1,Entry long,2026-04-05 16:00,Buy limit order,69002.4,1,69002.4,0,0.00,0,0,0.00,0,0.00,0,0.00,0
+2,Exit long,2026-04-06 04:00,Bracket Take Profit,69330.6,1,68878.6,452,0.66,0,452,0.66,-145,-0.21,452,0.05,2
+2,Entry long,2026-04-05 20:00,Buy limit order,68878.6,1,68878.6,452,0.66,0,452,0.66,-145,-0.21,452,0.05,2
