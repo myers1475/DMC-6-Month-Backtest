@@ -1,0 +1,24 @@
+Symbol,Side,Type,Qty,Remaining Qty,Filled Qty,Limit Price,Stop Price,Take Profit,Stop Loss,Avg Fill Price,Status
+MNQZ6,Sell,Stop,5,,,,29159.5,,,,Cancelled
+MNQZ6,Buy,Market,5,0,5,,,,,29175.5,Filled
+MNQZ6,Buy,Market,5,0,5,,,,,29177.5,Filled
+MNQZ6,Sell,Stop Loss,5,,,,29159.5,,,,Cancelled
+MNQZ6,Sell,Market,5,0,5,,,,,29180.5,Filled
+MNQZ6,Buy,Market,5,0,5,,,,,29215.75,Filled
+MNQZ6,Sell,Stop Loss,5,,,,29162.25,,,,Cancelled
+MNQZ6,Sell,Limit,5,,,29224.75,,,,,Cancelled
+MNQZ6,Buy,Stop Loss,5,,,,29258.25,,,,Cancelled
+MNQZ6,Sell,Stop Loss,10,0,10,,29157.5,,,29157.25,Filled
+MNQZ6,Buy,Market,10,0,10,,,,,29165.75,Filled
+MNQZ6,Sell,Market,10,0,10,,,,,29160.25,Filled
+MNQZ6,Buy,Market,10,0,10,,,,,29176.25,Filled
+MNQZ6,Sell,Stop Loss,10,,,,29151.75,,,,Cancelled
+MNQZ6,Buy,Market,10,0,10,,,,,29191,Filled
+MNQZ6,Sell,Stop Loss,10,0,10,,29184.25,,,29182.75,Filled
+MNQZ6,Buy,Market,10,0,10,,,,,29190,Filled
+MNQZ6,Buy,Stop Loss,10,,,,29202.5,,,,Cancelled
+MNQZ6,Sell,Market,10,0,10,,,,,29179,Filled
+MNQZ6,Sell,Market,10,0,10,,,,,29168.5,Filled
+MNQZ6,Buy,Market,10,0,10,,,,,29141.5,Filled
+MNQZ6,Sell,Stop Loss,10,,,,29126.75,,,,Cancelled
+MNQZ6,Sell,Market,10,0,10,,,,,29163.5,Filled
