@@ -81,3 +81,89 @@ A strategy can give you predefined rules, but it **can't develop that judgment**
 - **Skill compounds; strategy-hunting doesn't.**
 - **Screen time ≠ skill** unless it's deliberate practice with feedback.
 - **Open thread:** the "simple test" promised in Lesson 4.
+
+---
+
+## Part 1b — lesson time ~10:30 to 18:48, then 20:23 to 20:33
+Recording: `duomo-lessons/Lesson1b.mp4` (4:33, played at about 2x)
+
+> **Not yet covered:** lesson time **5:30 → ~10:30** (between 1a and 1b), **18:48 → 20:23** (skipped; it's around his paid program and the financials slide), and the last **~25 seconds** (20:33 → 20:58).
+
+### What you're actually after
+- Ask why you're learning to trade. Of course you want money and consistent profitability.
+- The deeper goal people don't realize until later: **results you can actually depend on**, so trading becomes a serious source of income. The alternative is hit-and-miss results, growing frustration, and never knowing when it could become a full-time career, or at least something dependable.
+
+### The question you have to be able to answer: "Am I actually any good at this?"
+- **Not** "did I make money last month?" Anyone can make money for a month or two, and Lesson 4 will show why that proves nothing.
+- The real questions:
+  - Can I **rely on my performance** to keep making money?
+  - Are my decisions **actually good ones**?
+  - Are they **better than a year ago**? Am I improving?
+  - **Do I have evidence** of that, or is it a gut feeling?
+- **The day you can answer those with evidence instead of blind confidence** is the day trading stops being a time-consuming hobby and becomes something you could rationally build a career on. Then you know whether:
+  - the decisions behind the money are **logically justified**,
+  - your analysis and decision-making are **improving**,
+  - the results are **stable and likely to last**, or just like the random strategies from the opening.
+- **His blunt point:** if your process is built on recognizing setups and applying predefined rules (a packaged strategy), **it can't give you that evidence**. It wasn't designed to develop or measure your independent judgment, so it can't develop or measure real trading skill.
+
+### His story
+- He learned everything he could: different strategies, technical analysis methods, even advanced material like **order flow**.
+- The pattern: a profitable week here, a good month there, then watching it all disappear and feeling back at square one. Each cycle makes the goal feel *further* away, because you start losing belief.
+- **Turning point:** he stopped taking the industry's claims at face value and started **testing them against logic and evidence**, in a way closer to the scientific method. Over the following years things kept improving, to the point of being profitable while trading part time.
+- He then left a career in **private banking and wealth management**, traded full time, and set up an **investment fund**. Since then he has run trading teams, built algorithmic trading systems, worked with top people in the business, and guest-lectured at universities. He has trained traders for the past decade using what he and his team found.
+- His claim about the material: it isn't a strategy learned elsewhere and repackaged. It comes from **testing conventional thinking, finding where it fails, and developing what actually makes logical sense** and produces results reliably.
+
+### The conventional route vs. reality
+- **Conventional route:** put strategy at the center. Find the right rules and setups, force yourself to execute them consistently, and if results are bad, change the strategy or blame your psychology.
+- **But a strategy doesn't interpret the market. You do.** It doesn't judge the context, decide whether there's a valid opportunity, or recognize when the context has changed. **The trader is always the variable.**
+- Strategies stay popular because they're easy to package and learn, and they feel like a shortcut.
+- Many people teaching them aren't deliberately misleading anyone. **When luck looks like skill**, some traders who are temporarily profiting from luck genuinely believe they've found a secret to the markets. So they teach others to find or follow a strategy, because that's how they learned. They don't know the real skills exist.
+
+### The "random results treadmill"
+- **Industry version:** the cycle above (lucky results → taught as a strategy → followed by others) is how he says the whole industry operates.
+- **Personal version:** you get bad results and look for a diagnosis, but you have **no real way to figure out what to improve**. So you jump to conclusions and work on whatever seems to make sense:
+  - losing run → "maybe the strategy needs changing"
+  - hesitating to open trades → "I need more discipline"
+  - closing trades early → "I need to fix my psychology"
+- You keep **treating symptoms** without learning how to analyze, decide, and review your trading properly. **You're guessing.** When things improve, you assume whatever you changed last was the fix, when it may all be randomness.
+
+### Where strategy *does* fit (he stresses this)
+- **Strategy still matters, but it comes *after* you've analyzed the market and formed a forecast.**
+- The strategy should **express the judgment you've made** about the situation. It shouldn't be predetermined, with you then scanning situations for one that fits it.
+- He says that isn't how strategy works in any other field, and it doesn't work in markets either.
+
+### The good news
+- If you've spent years learning through strategies and setups that could never build these skills, **those years haven't shown the limit of your ability** or capped your potential.
+- You haven't yet run the experiment of learning trading the logical way, so you don't know what you're capable of. He believes it's a lot more than you've seen so far.
+
+### The two things he asks you to agree on
+1. **Temporary results can't prove** that a strategy, a trading approach, or anything else works.
+2. **Following a predefined strategy**, someone else's or your own, **can't develop your ability to analyze and decide** in each unique market situation.
+
+If both are true, **another strategy isn't the answer. Finding the right strategy won't fix anything. There is no right strategy.**
+
+### "The elephant in the room": his paid program and his income
+- He acknowledges skepticism is fair in this industry.
+- Yes, he has a **paid trader development program**, but he says it isn't how he makes his income and he doesn't depend on anyone joining.
+- He shows what he says are the **exact figures filed for tax**, covering all money made from teaching (training, membership, ad revenue, affiliate commission, everything):
+
+  | Year | Revenue | Profit / loss | Nicholas' salary or other earnings from Duomo |
+  |---|---|---|---|
+  | 2025 | £46,249 | −£12,905 | £0 |
+  | 2024 | £62,833 | −£35,500 | £0 |
+  | 2023 | £58,674 | −£4,491 | £0 |
+  | 2022 | £63,496 | £652 | £0 |
+  | 2021 | £59,694 | £4,898 | £0 |
+  | 2020 | £88,591 | (not legible) | £0 |
+
+- His point: because he doesn't depend on teaching income, he has never tried to sign up as many people as possible by saying trading is easy, learnable in a weekend, or a simple strategy for endless money, or by making bold claims he can't back up. **He can be completely honest about what success actually takes.**
+- That honesty, he says, filters out people looking for get-rich-quick schemes or a simple strategy to start right away. You can watch the rest of the series without waiting for a sales pitch.
+- **Lead-in to Lesson 2:** "we're left with an obvious question…" *(the recording ends here, at about 20:33 of 20:58)*
+
+### Key takeaways from Part 1b
+- **The real goal is dependable results, backed by evidence**: can you rely on your performance, are your decisions good, are you improving, and can you prove it?
+- **A setup-based, predefined-rule process can't produce that evidence**, because it doesn't develop or measure your judgment.
+- **The trader is always the variable.** A strategy doesn't read context or recognize when it changes.
+- **The personal treadmill:** without a way to diagnose, you treat symptoms (strategy, discipline, psychology) and credit randomness to your last change.
+- **Correct order:** analyze → forecast → *then* a strategy that expresses that judgment.
+- **Two premises:** temporary results prove nothing, and following predefined rules can't build judgment. So **there is no right strategy.**
