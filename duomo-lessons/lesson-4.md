@@ -72,3 +72,45 @@ Recording: `duomo-lessons/4a.mp4` (4:13; the first ~22 seconds are the page befo
 - **The P&L/journal loop can't separate analysis, execution, management and variance**, so changes become guesses credited to luck.
 - **The dark room:** a score with no visible cause can't teach you anything.
 - **The first thing to measure is how accurate your probability estimates are: calibration**, tested across many forecasts at the same stated probability.
+
+---
+
+## Part 4b — lesson time 15:21 to end (19:03)
+Recording: `duomo-lessons/4b.mp4` (1:55)
+
+*(Picks up mid-thought, apparently about an approach that ignores the situation.)*
+
+### Why your skills haven't improved
+- …so **your skills become almost impossible to improve deliberately.**
+- **It's not that you've personally been bad at developing the right skills. What you were given was never skill development in the first place.**
+- That's what Lesson 1 meant: you were taught to **follow a strategy and apply its rules**, but never taught to **analyze a situation and decide what to do from first principles**, based on the context of that particular situation.
+- **Calibration is what it looks like when judgment is finally treated as a skill that can be measured and improved over time**, instead of the strategy-first approach.
+
+### The final premise he asks you to agree on
+> If short-term profits can come from luck, and short-term losses can happen despite a real edge, **P&L can't be the only way you measure skill and judge performance.** You also need to **measure the quality of the decisions behind those results.** Otherwise you're just guessing about what needs to change.
+
+*(Plug: he refers to "the activity we did a moment ago" as revealing a problem you may not have been aware of, and says the trader development program covers reading markets to produce forecasts, taking logical actions aligned with them, and using your data to measure and improve every aspect of your trading; link duomoinitiative.com/apply.)*
+
+### The standard is demanding
+- **Most of the trading-education industry is very far from this standard.**
+- It's the difference between **wanting to feel like a good trader** and **wanting to find out whether you are one** and what you need to do to become one.
+- **Other serious forecasting fields already live by these principles**: weather forecasting, intelligence analysis. **There's no version of taking trading seriously that avoids this**: make forecasts properly in the first place, then work on your calibration.
+
+### Knowing about calibration isn't using it: what it requires
+1. **Analysis that actually produces a probability estimate.** That needs a way of **reading the context, mapping the potential outcomes, and arriving at a probability number that means something**, not a feeling.
+2. **Trades planned and executed in line with those forecasts.** Otherwise you're grading one thing through calibration while doing something completely different.
+3. **Results fed back into how you analyze the markets**, so there's an **improvement loop** and progress compounds.
+
+### One connected system
+- **None of these pieces works on its own.** The skill from Lesson 2 (estimating probabilities), the psychology from Lesson 3, and the measurement from this lesson **only function as part of one connected system**, where each part has a defined role and feeds into the others. (Slide: *It all functions as one connected system*: Real trading skill → Trader psychology → Measuring performance.)
+- **Almost nobody in the industry trades with a connected system like that.** He says that's the real reason almost nobody develops reliably and consistently, however much they study or how much effort they put in.
+
+### Lead-in to Lesson 5
+- The final lesson will show **that complete system**: **the full operating model of a professional trader, and the "flywheel" that makes progress inevitable**, so the time and effort you spend leads to **measurable, dependable improvement** in your performance.
+
+### Key takeaways from Part 4b
+- **Strategy-following was never skill development**, so it can't be deliberately improved.
+- **Calibration treats judgment as a measurable, improvable skill.**
+- **P&L alone can't judge skill. Measure decision quality too.**
+- **Calibration needs three things:** analysis that yields real probability numbers, execution that matches the forecasts, and a feedback loop into the analysis.
+- **Skill, psychology and measurement only work as one connected system.** Lesson 5 promises the full operating model and its "flywheel."
