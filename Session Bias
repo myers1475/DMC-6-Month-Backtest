@@ -1,0 +1,42 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © TradeSharpe99
+
+//@version=5
+indicator(title="Tradesharpe Session Bias", overlay=true)
+
+loc = input.string("TOP RIGHT", title="TABLE LOCATION", options=['TOP RIGHT', 'TOP LEFT', 'BOTTOM RIGHT', 'BOTTOM LEFT'])
+
+locc = loc == "TOP RIGHT" ? position.top_right :
+  loc == "TOP LEFT" ? position.top_left : 
+  loc == "BOTTOM RIGHT" ? position.bottom_right : position.bottom_left
+
+//HIGH TF DATA
+[dclose, dopen] = request.security("", "D", [close[1], open[1]])
+[cl, op] = request.security("", "240", [close[1], open[1]])
+
+
+//HIGH TF DATA BREAKDOWN
+dtype = dclose>dopen ? 1 : dclose<dopen ? 2 : 3
+ftype = cl>op ? 11 : cl<op ? 22 : 33
+
+
+//RESULT CALCULATIONS
+textone = (dtype == 1 and ftype == 11) ? "BULLISH" :
+  (dtype == 1 and ftype != 11) ? "MIXED" : 
+  (dtype == 2 and ftype == 22) ? "BEARISH" :
+  (dtype == 2 and ftype != 22) ? "MIXED" : "MIXED1"
+
+
+//COLOR CONDITIONS
+textcol = (dtype == 1 and ftype == 11) ? color.green :
+  (dtype == 1 and ftype != 11) ? color.gray : 
+  (dtype == 2 and ftype == 22) ? color.red :
+  (dtype == 2 and ftype != 22) ? color.gray : color.gray
+
+
+//TABLE IMPLEMENTATION
+var testTable = table.new(position = locc, columns = 2, rows = 1, bgcolor = color.white, border_color=color.black, border_width = 1)
+if barstate.islast
+    table.cell(table_id = testTable, column = 0, row = 0, text = "SESSION BIAS", bgcolor=color.white, text_color=color.black)
+    table.cell(table_id = testTable, column = 1, row = 0, text = textone, bgcolor=textcol)
+    "Update Existing Script"
