@@ -20,3 +20,8 @@ Result: avg entry 29,289.13, exit 28,949.25 (target), +339.9 pts per contract, +
 
 4 trades, 4 wins (100%), avg +0.46R per contract, NET +1.82R per contract; account +$5,159.61 (+51.6% on $10K).
 Regime: post-top chop / two-way (unlike the 4H uptrend replay).
+
+## Lessons from trade 2 (May 12 short, went against, averaged, bailed at nearest level)
+1. Rounded purple tops beat sharp V spikes. A sharp V = fresh force (price wants to go further); a rounded top = fading momentum (the hook works).
+2. Green slope is the filter: shorts only when the green points down, longs only when it points up. At the trade 2 entry the green had bottomed and was turning up.
+3. Starting with 2 contracts kept the damage to one level; averaging into the nearest level turned it into a small green exit.
