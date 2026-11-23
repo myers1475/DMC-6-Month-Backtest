@@ -2,7 +2,8 @@
 indicator("Relative Strength Levels", shorttitle = "RSL", overlay = true, max_boxes_count = 200, max_labels_count = 200)
 
 // RELATIVE STRENGTH LEVELS
-// Every body turn on each timeframe is scored on 7 elements (bodies, not wicks):
+// A level is a body turn (bodies, not wicks) followed by at least 2 opposite candles in the reaction leg - support/resistance.
+// Each level is then scored on 7 elements:
 //   0 History   - candles whose body touched the level's zone, before the turn and after it formed (cap ~60 candles)
 //   1 Move in   - best of: move as % of price (trend) or as a share of the prior range height (range)
 //   2 Reaction  - share of the move taken back, counted from the first opposite candle (C1)
@@ -15,10 +16,18 @@ indicator("Relative Strength Levels", shorttitle = "RSL", overlay = true, max_bo
 // Each timeframe is scored on its OWN history (request.security), so HTF zones are the same on any chart.
 // Timeframes below the chart are not used. Work happens only when a timeframe's candle closes (memory/CPU light).
 
-grpG  = "Timeframe groups"
-useH  = input.bool(true,  "HTF (M, W, D, 4H, 1H)", group = grpG)
-useMd = input.bool(false, "MTF (1H, 30m, 15m)",    group = grpG)
-useL  = input.bool(false, "LTF (5m, 3m, 2m, 1m)",  group = grpG)
+grpG = "Timeframes (each can be turned on or off)"
+tM   = input.bool(true,  "HTF:  M", group = grpG, inline = "h")
+tW   = input.bool(true,  "W",       group = grpG, inline = "h")
+tD   = input.bool(true,  "D",       group = grpG, inline = "h")
+t4   = input.bool(true,  "4H",      group = grpG, inline = "h")
+t1   = input.bool(true,  "1H",      group = grpG, inline = "h")
+t30  = input.bool(false, "MTF:  30m", group = grpG, inline = "m")
+t15  = input.bool(false, "15m",       group = grpG, inline = "m")
+t5   = input.bool(false, "LTF:  5m",  group = grpG, inline = "l")
+t3   = input.bool(false, "3m",        group = grpG, inline = "l")
+t2   = input.bool(false, "2m",        group = grpG, inline = "l")
+t1m  = input.bool(false, "1m",        group = grpG, inline = "l")
 
 grpS     = "Scoring"
 topPct   = input.float(25, "Qualify: top % of each timeframe's levels", minval = 1, maxval = 100, group = grpS)
@@ -200,7 +209,15 @@ finalize(Feed f, Cand cd, float atrP) =>
     for k = cd.j to cd.j + f.W - 1
         rx := side == -1 ? math.max(rx, gC(f, k)) : math.min(rx, gC(f, k))
     rx := side == -1 ? rx - lvl : lvl - rx
-    if move > 0 and rx > 0
+    // core rule: at least 2 opposite candles in the reaction leg (from C1, until a close back through the level)
+    int nOpp = 0
+    for k = cd.j to cd.j + f.W - 1
+        float ck = gC(f, k)
+        if side == -1 ? ck < lvl : ck > lvl
+            break
+        if isOpp(f, k, side)
+            nOpp += 1
+    if move > 0 and rx > 0 and nOpp >= 2
         // 1 move in: trend vs range
         float s1t = math.min(move / lvl / 0.20, 1.0) * 2.0
         int RW = winBars(f, 60, 5, 60)
@@ -308,17 +325,17 @@ run(string name, float mult, float dpb, int K, int W, simple string tf, simple b
     [p_, s_, t_, a_, use]
 
 // (name, weight, days per candle, K, reaction window)
-[lpM, lsM, ltM, laM, luM]  = run("M",   1.30, 30.0,       2, 3, "M",   useH)
-[lpW, lsW, ltW, laW, luW]  = run("W",   1.15, 7.0,        3, 4, "W",   useH)
-[lpD, lsD, ltD, laD, luD]  = run("D",   1.00, 1.0,        5, 7, "D",   useH)
-[lp4, ls4, lt4, la4, lu4]  = run("4H",  0.95, 1.0 / 6,    5, 7, "240", useH)
-[lp1, ls1, lt1, la1, lu1]  = run("1H",  0.90, 1.0 / 24,   5, 7, "60",  useH or useMd)
-[lp30, ls30, lt30, la30, lu30] = run("30m", 0.85, 1.0 / 48,   5, 7, "30",  useMd)
-[lp15, ls15, lt15, la15, lu15] = run("15m", 0.85, 1.0 / 96,   5, 7, "15",  useMd)
-[lp5, ls5, lt5, la5, lu5]  = run("5m",  0.80, 1.0 / 288,  5, 7, "5",   useL)
-[lp3, ls3, lt3, la3, lu3]  = run("3m",  0.80, 1.0 / 480,  5, 7, "3",   useL)
-[lp2, ls2, lt2, la2, lu2]  = run("2m",  0.75, 1.0 / 720,  5, 7, "2",   useL)
-[lp1m, ls1m, lt1m, la1m, lu1m] = run("1m",  0.75, 1.0 / 1440, 5, 7, "1",   useL)
+[lpM, lsM, ltM, laM, luM]  = run("M",   1.30, 30.0,       2, 3, "M",   tM)
+[lpW, lsW, ltW, laW, luW]  = run("W",   1.15, 7.0,        3, 4, "W",   tW)
+[lpD, lsD, ltD, laD, luD]  = run("D",   1.00, 1.0,        5, 7, "D",   tD)
+[lp4, ls4, lt4, la4, lu4]  = run("4H",  0.95, 1.0 / 6,    5, 7, "240", t4)
+[lp1, ls1, lt1, la1, lu1]  = run("1H",  0.90, 1.0 / 24,   5, 7, "60",  t1)
+[lp30, ls30, lt30, la30, lu30] = run("30m", 0.85, 1.0 / 48,   5, 7, "30",  t30)
+[lp15, ls15, lt15, la15, lu15] = run("15m", 0.85, 1.0 / 96,   5, 7, "15",  t15)
+[lp5, ls5, lt5, la5, lu5]  = run("5m",  0.80, 1.0 / 288,  5, 7, "5",   t5)
+[lp3, ls3, lt3, la3, lu3]  = run("3m",  0.80, 1.0 / 480,  5, 7, "3",   t3)
+[lp2, ls2, lt2, la2, lu2]  = run("2m",  0.75, 1.0 / 720,  5, 7, "2",   t2)
+[lp1m, ls1m, lt1m, la1m, lu1m] = run("1m",  0.75, 1.0 / 1440, 5, 7, "1",   t1m)
 
 type Store
     array<float> p
