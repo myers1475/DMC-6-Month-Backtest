@@ -27,7 +27,9 @@ maxStore = input.int(150, "Levels stored per timeframe", minval = 20, maxval = 3
 NMAX     = input.int(500, "Candles kept per timeframe", minval = 100, maxval = 1000, group = grpS)
 
 grpC   = "Display"
-nZones = input.int(12, "Zones shown (nearest to price)", minval = 1, maxval = 40, group = grpC)
+nAbove = input.int(6, "Zones shown above price", minval = 0, maxval = 30, group = grpC)
+nBelow = input.int(6, "Zones shown below price", minval = 0, maxval = 30, group = grpC)
+minRs  = input.float(5.1, "Hide zones under this rs", minval = 0, maxval = 10, step = 0.1, group = grpC)
 cRes   = input.color(#FF1744, "Zone above price", group = grpC)
 cSup   = input.color(#00E676, "Zone below price", group = grpC)
 cIn    = input.color(#FFEA00, "Price inside zone", group = grpC)
@@ -375,25 +377,45 @@ if barstate.islast and bar_index != lastBuilt
                     nt += 1
             zVal.push(zBest.get(z) + 0.5 * (nt - 1))
             zTxt.push(txt)
-        array<float> zDist = array.new<float>()
+        // rs for every zone (rank among all zones on the chart)
+        array<float> zRs = array.new<float>()
         for z = 0 to Z - 1
-            zDist.push(close > zHi.get(z) ? close - zHi.get(z) : close < zLo.get(z) ? zLo.get(z) - close : 0.0)
-        array<int> near = zDist.sort_indices(order.ascending)
-        int tx = time + lblOff * timeframe.in_seconds(timeframe.period) * 1000
-        for k = 0 to math.min(nZones, Z) - 1
-            int z = near.get(k)
             int below = 0
             for q = 0 to Z - 1
                 if zVal.get(q) <= zVal.get(z)
                     below += 1
-            float rs = math.round(float(below) / Z * 100) / 10.0
-            float w = atrPct * (zLo.get(z) + zHi.get(z)) / 2
-            float top = zHi.get(z)
-            float bot = zLo.get(z)
-            if top - bot < 0.15 * w
-                float mid = (top + bot) / 2
-                top := mid + 0.075 * w
-                bot := mid - 0.075 * w
-            color col = close > zHi.get(z) ? cSup : close < zLo.get(z) ? cRes : cIn
-            zBoxes.push(box.new(zT.get(z), top, time, bot, xloc = xloc.bar_time, extend = extend.right, border_color = col, border_width = bW, bgcolor = color.new(col, fillTr)))
-            zLabels.push(label.new(tx, (top + bot) / 2, zTxt.get(z) + "  " + str.tostring(rs, "0.0") + " rs", xloc = xloc.bar_time, style = label.style_label_left, color = color.new(color.black, 100), textcolor = lblCol, size = size.normal, text_formatting = text.format_bold))
+            zRs.push(math.round(float(below) / Z * 100) / 10.0)
+        // pick: zones price is inside (always), nearest nAbove above and nBelow below with rs >= minRs
+        array<int> pick = array.new<int>()
+        int nA = 0
+        int nB = 0
+        array<float> zDist = array.new<float>()
+        for z = 0 to Z - 1
+            zDist.push(close > zHi.get(z) ? close - zHi.get(z) : close < zLo.get(z) ? zLo.get(z) - close : 0.0)
+        array<int> near = zDist.sort_indices(order.ascending)
+        for k = 0 to Z - 1
+            int z = near.get(k)
+            bool inside = close <= zHi.get(z) and close >= zLo.get(z)
+            if inside
+                pick.push(z)
+            else if zRs.get(z) >= minRs
+                if zLo.get(z) > close and nA < nAbove
+                    pick.push(z)
+                    nA += 1
+                else if zHi.get(z) < close and nB < nBelow
+                    pick.push(z)
+                    nB += 1
+        int tx = time + lblOff * timeframe.in_seconds(timeframe.period) * 1000
+        if pick.size() > 0
+            for z in pick
+                float rs = zRs.get(z)
+                float w = atrPct * (zLo.get(z) + zHi.get(z)) / 2
+                float top = zHi.get(z)
+                float bot = zLo.get(z)
+                if top - bot < 0.15 * w
+                    float mid = (top + bot) / 2
+                    top := mid + 0.075 * w
+                    bot := mid - 0.075 * w
+                color col = close > zHi.get(z) ? cSup : close < zLo.get(z) ? cRes : cIn
+                zBoxes.push(box.new(zT.get(z), top, time, bot, xloc = xloc.bar_time, extend = extend.right, border_color = col, border_width = bW, bgcolor = color.new(col, fillTr)))
+                zLabels.push(label.new(tx, (top + bot) / 2, zTxt.get(z) + "  " + str.tostring(rs, "0.0") + " rs", xloc = xloc.bar_time, style = label.style_label_left, color = color.new(color.black, 100), textcolor = lblCol, size = size.normal, text_formatting = text.format_bold))
