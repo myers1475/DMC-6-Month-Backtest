@@ -5,6 +5,7 @@ d['t']=pd.to_datetime(d.time,unit='s'); d=d.set_index('t').rename(columns={'Volu
 def rs(df,rule): return df.resample(rule,label='left',closed='left').agg({'open':'first','high':'max','low':'min','close':'last','vol':'sum'}).dropna()
 def atr(df,n=14):
     tr=np.maximum.reduce([df.high-df.low,(df.high-df.close.shift()).abs(),(df.low-df.close.shift()).abs()]); return pd.Series(tr,index=df.index).ewm(alpha=1/n,adjust=False).mean()
+REQ2=True
 NB=400  # history buckets (log price) -> fixed memory, like a Pine array
 def score_tf(df,tf,mult,dpb,atr_pct,K=5,W=7,LB_days=365):
     o,h,l,c,v=[df[k].values for k in ['open','high','low','close','vol']]
@@ -34,6 +35,11 @@ def score_tf(df,tf,mult,dpb,atr_pct,K=5,W=7,LB_days=365):
             if j+W>n: continue
             rx=(c[j:j+W].max()-lvl) if side==-1 else (lvl-c[j:j+W].min())
             if rx<=0: continue
+            nopp=0
+            for k in range(j,j+W):
+                if (c[k]<lvl) if side==-1 else (c[k]>lvl): break
+                if (c[k]>o[k]) if side==-1 else (c[k]<o[k]): nopp+=1
+            if REQ2 and nopp<2: continue
             ratio=rx/move; s2=min(ratio/0.5,1)*2
             # 0 history: candles whose body touched the level's zone (+-0.5 prorated ATR), before the turn and after it formed
             half=0.5*atr_pct*lvl; cov=(bb<=lvl+half)&(bt>=lvl-half)
