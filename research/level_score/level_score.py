@@ -12,6 +12,7 @@ def score_tf(df,tf,mult,K=5,W=7,LB=365):
     P=pd.Series(c).rolling(3).mean()-pd.Series(c).rolling(10).mean(); P=P.values
     lo,hi=np.log(df.low.min()*0.9),np.log(df.high.max()*1.1)
     bk=lambda x:np.clip(((np.log(x)-lo)/(hi-lo)*NB).astype(int),0,NB-1)
+    BBK=bk(bb); BTK=bk(bt)
     out=[]
     for p in range(max(K,30),n-2):
         for side in (-1,1):
@@ -32,10 +33,11 @@ def score_tf(df,tf,mult,K=5,W=7,LB=365):
             if rx<=0: continue
             ratio=rx/move; s2=min(ratio/0.5,1)*2
             # 0 history: bars whose BODY covered this bucket in the LB bars before (fixed buckets)
-            b=bk(np.array([lvl]))[0]; hb=0
-            for q in range(max(0,p-LB),max(0,p-30)):
-                if bk(np.array([bb[q]]))[0]<=b<=bk(np.array([bt[q]]))[0]: hb+=1
-            s0=min(hb/30,1)*2
+            b=bk(np.array([lvl]))[0]
+            j0=j+W  # end of reaction window
+            cov=(BBK<=b)&(b<=BTK)
+            hb=int(cov[max(0,p-LB):max(0,p-30)].sum())+int(cov[j0:].sum())   # before the turn + after it formed (to today)
+            s0=min(hb/60,1)*2
             # 5 volume at the turn vs prior 50 median
             med=np.median(v[max(0,p-50):p]) if p>0 else 0
             rv=v[p-1:p+2].max()/med if med>0 else 1
@@ -67,7 +69,8 @@ def zones(L,atr_now,asof):
     q=L[(L.score>=QUAL)&(L['pv']<=asof)].sort_values('price').to_dict('records')
     Z=[]
     for r in q:
-        if Z and r['price']-Z[-1]['lo']<=1.0*atr_now and r['price']-Z[-1]['hi']<=0.75*atr_now:
+        w=atr_now*r['price']
+        if Z and r['price']-Z[-1]['lo']<=1.0*w and r['price']-Z[-1]['hi']<=0.75*w:
             z=Z[-1]; z['m'].append(r); z['hi']=max(z['hi'],r['price'])
         else: Z.append(dict(lo=r['price'],hi=r['price'],m=[r]))
     rows=[]
@@ -76,8 +79,10 @@ def zones(L,atr_now,asof):
         rsv=min(best['score']+0.5*(len(tfs)-1),10)
         rows.append(dict(lo=z['lo'],hi=z['hi'],tfs='/'.join(tfs),n=len(z['m']),rs=round(rsv,1),best=f"{best['tf']} {best['pv'].date()} {best['price']}"))
     return pd.DataFrame(rows)
-A=atr(d).iloc[-1]
-Zn=zones(L,A,d.index[-1]); Zn=Zn[(Zn.hi>45000)&(Zn.lo<130000)]
-pd.set_option('display.width',200)
-print('daily ATR now',round(A)); print(Zn.to_string(index=False))
+A=atr(d).iloc[-1]/d.close.iloc[-1]
+QUAL=6
+Zall=zones(L,A,d.index[-1])
+for name,lo,hi in [('2019-20 box',6500,14500),('2021-22 box',28000,40000),('2023 box',24000,32500),('2024-25 top box',88000,100500),('ALL 45K-130K',45000,130000)]:
+    Z=Zall[(Zall.hi>=lo)&(Zall.lo<=hi)]
+    print(f"\n== {name}: {len(Z)} zones rs>=6"); print(Z.to_string(index=False))
 print(L[(L.price>83000)&(L.price<86000)&(L['pv']>='2025-11-01')&(L['pv']<'2025-12-31')].to_string(index=False))
