@@ -14,3 +14,11 @@ Headline (longs):
 - Their base P/DD 7.53 not reproduced (ours -0.2 to 2.1) -> our reading of their base rule likely differs.
 
 Files: cci_test.py (base + shorts mirror, by year), cci_variants.py (session/anchor/neighborhood), *_output.txt, trades_60m.csv
+
+## 9:30 box breakout + CCI filter (MNQ 5m, May 4 - Nov 23 2026)
+Rules: box = 9:30 5m candle H/L; entry = first 5m close outside box (and reversal = first close outside opposite side), window to 12:00 ET.
+Target 50 pts, stop 100 pts (1R = 100 pts). If neither hit by 12:00, exit at the 11:55 bar close (assumption). Stop checked first when one bar hits both.
+CCI from daily Globex bars (NQ 15m history + MNQ 5m). Long filter: Lowest(CCI27,18) < -100. Short = mirror (Highest > +100), not part of the original claim.
+First breakout longs: all 81 / -5.69R; filter ON 38 / -2.53R (-0.067R/trade); OUT 43 / -3.17R (-0.074R/trade) -> no difference.
+First breakout shorts: all 65 / +8.80R; mirror ON 42 / +0.55R; OUT 23 / +8.25R (91% WR) -> mirror filter hurt.
+Reversal longs: ON 8 / +1.45R vs OUT 17 / +1.29R -> too few trades. Output: box930_output.txt, trades: box930_trades.csv
