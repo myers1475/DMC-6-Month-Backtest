@@ -1,0 +1,23 @@
+ETH anchor=prior low   | base n=1070 WR=55.5% exp=+0.027R NET R= +28.4 P/DD= 0.82
+                          | CCI on n= 473 WR=53.7% exp=+0.009R NET R=  +4.3 P/DD= 0.17
+                          | CCI off n= 597 WR=57.0% exp=+0.047R NET R= +27.9 P/DD= 1.67
+ETH anchor=prior close | base n= 360 WR=59.2% exp=+0.114R NET R= +41.2 P/DD= 2.08
+                          | CCI on n= 179 WR=57.5% exp=+0.108R NET R= +19.3 P/DD= 1.14
+                          | CCI off n= 181 WR=60.8% exp=+0.126R NET R= +22.7 P/DD= 2.01
+RTH anchor=prior low   | base n= 957 WR=55.8% exp=-0.006R NET R=  -5.8 P/DD=-0.17
+                          | CCI on n= 438 WR=57.3% exp=+0.010R NET R=  +4.3 P/DD= 0.26
+                          | CCI off n= 519 WR=54.5% exp=-0.024R NET R= -12.6 P/DD=-0.38
+RTH anchor=prior close | base n= 413 WR=59.6% exp=+0.016R NET R=  +6.6 P/DD= 0.28
+                          | CCI on n= 201 WR=59.2% exp=+0.026R NET R=  +5.1 P/DD= 0.33
+                          | CCI off n= 212 WR=59.9% exp=+0.004R NET R=  +0.8 P/DD= 0.06
+
+Neighborhood (RTH, prior low): NET R of filtered set vs excluded set
+CCI(20) lookback 10: kept n= 405 expR=-0.034 | excluded n= 565 expR=+0.015
+CCI(20) lookback 18: kept n= 514 expR=+0.002 | excluded n= 449 expR=-0.015
+CCI(20) lookback 26: kept n= 604 expR=+0.017 | excluded n= 352 expR=-0.046
+CCI(27) lookback 10: kept n= 354 expR=-0.028 | excluded n= 610 expR=+0.008
+CCI(27) lookback 18: kept n= 438 expR=+0.012 | excluded n= 519 expR=-0.021
+CCI(27) lookback 26: kept n= 517 expR=+0.001 | excluded n= 432 expR=-0.015
+CCI(34) lookback 10: kept n= 327 expR=-0.012 | excluded n= 631 expR=-0.003
+CCI(34) lookback 18: kept n= 406 expR=+0.017 | excluded n= 544 expR=-0.024
+CCI(34) lookback 26: kept n= 477 expR=+0.010 | excluded n= 467 expR=-0.022

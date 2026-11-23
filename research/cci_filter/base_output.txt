@@ -1,0 +1,19 @@
+
+=== LONG (2020-01-07 to 2026-08-03) ===
+base (all breakouts)               n=1070 WR=55.5% RR=0.85 exp=+0.027R (  +4.4pt, $   +9/MNQ) NET=   +4702pt NET R= +28.4 maxDD=  -5726pt P/DD= 0.82 avgLoss(1R)=165.8pt
+CCI filter ON (correction seen)    n= 473 WR=53.7% RR=0.88 exp=+0.009R (  +1.8pt, $   +4/MNQ) NET=    +847pt NET R=  +4.3 maxDD=  -5130pt P/DD= 0.17 avgLoss(1R)=198.2pt
+filtered OUT (no correction)       n= 597 WR=57.0% RR=0.84 exp=+0.047R (  +6.5pt, $  +13/MNQ) NET=   +3855pt NET R= +27.9 maxDD=  -2311pt P/DD= 1.67 avgLoss(1R)=138.2pt
+
+=== SHORT (2020-01-08 to 2026-07-30) ===
+base (all breakouts)               n= 861 WR=47.6% RR=0.96 exp=-0.067R ( -12.3pt, $  -25/MNQ) NET=  -10554pt NET R= -57.9 maxDD= -13502pt P/DD=-0.78 avgLoss(1R)=182.2pt
+CCI filter ON (correction seen)    n= 631 WR=47.2% RR=1.04 exp=-0.039R (  -6.2pt, $  -12/MNQ) NET=   -3939pt NET R= -24.6 maxDD=  -8583pt P/DD=-0.46 avgLoss(1R)=160.4pt
+filtered OUT (no correction)       n= 230 WR=48.7% RR=0.81 exp=-0.118R ( -28.8pt, $  -58/MNQ) NET=   -6615pt NET R= -27.2 maxDD=  -7460pt P/DD=-0.89 avgLoss(1R)=243.6pt
+
+LONG by year: base pts / filtered pts / n_filtered
+2020    -792    -169  60/173
+2021   +1792   +1511  69/167
+2022   -4784   -3732 118/148
+2023   +2931   +2163  71/157
+2024   +3506   +1558  36/163
+2025    +199    -357  63/152
+2026   +1851    -128  56/110
