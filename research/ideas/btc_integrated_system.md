@@ -18,3 +18,11 @@ Next step when ready: walk real BTC setups one at a time, extract combination ru
 - Exit (separate, stricter): W red dot AND weekly close below a strong zone.
 - Not for MNQ intraday (that stays Levels & Linda).
 Open: define the "bad season" windows. Plan: test on BTC history first (without season, then with), before any Pine.
+
+## Season reads the dots (agreed 2026-11-23)
+Season is not a 5th signal; it tells the light how to read each dot.
+- Monthly red dot 1-10 months after a halving = pause (stay in, or step aside and re-enter on the next monthly green circle).
+- Monthly red dot 11+ months after a halving = top window -> scale-out ladder: daily red dot (first piece) -> weekly red dot -> monthly red dot (rest).
+  BTC: 4/4 tops (Jan 2018, Apr 2021, Dec 2021, Sep 2025) in 11-19 mo; 3/3 early ones (Sep 2016, May 2024, Feb 2025) at 1-10 mo, each followed by a monthly green circle at a higher price within 1-6 mo.
+  Order in time is bottom-up: daily red dots, then weekly, monthly confirms last. Cutoff is thin (Feb 2025 at 10 mo) - treat as soft zone ~10-20 mo.
+- Green dots in Q4 of a bottoming year failed; bottom-window greens worked.
