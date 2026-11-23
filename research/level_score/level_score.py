@@ -54,15 +54,18 @@ def score_tf(df,tf,mult,dpb,atr_pct,K=5,W=7,LB_days=365):
             for r in out:
                 if r['side']==-side and abs(r['price']-lvl)<=half and r['pv']<df.index[p]: s6=1;break
             raw=s0+s1+s2+s3+s4+s5+s6
-            score=min(raw/11*10*mult,10)
+            score=raw/11*10*mult
             out.append(dict(tf=tf,pv=df.index[p],side=side,price=round(lvl),hist=round(s0,1),move=round(s1,1),react=round(s2,1),retest=s3,momo=s4,vol=round(s5,1),flip=s6,score=round(score,1),move_pct=round(move/lvl*100,1),move_of_range=round(fr*100),react_pct=round(ratio*100),hist_bars=hb))
     return pd.DataFrame(out)
 APCT=(atr(d).iloc[-1]/d.close.iloc[-1])
 lvD=score_tf(d,'D',1.0,1,APCT); lvW=score_tf(rs(d,'W-MON'),'W',1.15,7,APCT,K=3,W=4)
 L=pd.concat([lvD,lvW]); L.to_csv('level_scores.csv',index=False)
-QUAL=3.0
-def zones(L,atr_now,asof):
-    q=L[(L.score>=QUAL)&(L['pv']<=asof)].sort_values('price').to_dict('records')
+TOP=0.25   # a level qualifies if its raw score is in the top 25% of all levels so far
+def pct_rank(vals,x): vals=np.sort(vals); return np.searchsorted(vals,x,side='right')/len(vals)*10
+def zones(L,atr_now,asof,top=TOP):
+    H=L[L['pv']<=asof].copy()
+    H['lrs']=[round(pct_rank(H.score.values,x),1) for x in H.score]
+    q=H[H.lrs>=10*(1-top)].sort_values('price').to_dict('records')
     Z=[]
     for r in q:
         w=atr_now*r['price']
@@ -72,13 +75,13 @@ def zones(L,atr_now,asof):
     rows=[]
     for z in Z:
         best=max(z['m'],key=lambda r:r['score']); tfs=sorted({r['tf'] for r in z['m']},key=lambda t:'MWD'.index(t))
-        rsv=min(best['score']+0.5*(len(tfs)-1),10)
-        rows.append(dict(lo=z['lo'],hi=z['hi'],tfs='/'.join(tfs),n=len(z['m']),rs=round(rsv,1),best=f"{best['tf']} {best['pv'].date()} {best['price']}"))
-    return pd.DataFrame(rows)
+        rows.append(dict(lo=z['lo'],hi=z['hi'],tfs='/'.join(tfs),n=len(z['m']),val=best['score']+0.5*(len(tfs)-1),level_rs=best['lrs'],best=f"{best['tf']} {best['pv'].date()} {best['price']}"))
+    R=pd.DataFrame(rows)
+    R['rs']=[round(pct_rank(R.val.values,x),1) for x in R.val]   # zone rs = rank among all zones on the chart
+    return R.drop(columns=['val'])
 A=atr(d).iloc[-1]/d.close.iloc[-1]
-QUAL=6
 Zall=zones(L,A,d.index[-1])
 for name,lo,hi in [('2019-20 box',6500,14500),('2021-22 box',28000,40000),('2023 box',24000,32500),('2024-25 top box',88000,100500),('ALL 45K-130K',45000,130000)]:
     Z=Zall[(Zall.hi>=lo)&(Zall.lo<=hi)]
-    print(f"\n== {name}: {len(Z)} zones rs>=6"); print(Z.to_string(index=False))
+    print(f"\n== {name}: {len(Z)} zones (top 25% levels)"); print(Z.to_string(index=False))
 print(L[(L.price>83000)&(L.price<86000)&(L['pv']>='2025-11-01')&(L['pv']<'2025-12-31')].to_string(index=False))
