@@ -1,0 +1,227 @@
+//@version=6
+indicator("Reaction Levels (Levels & Linda)", shorttitle = "Reaction Levels", overlay = true, max_lines_count = 500, max_labels_count = 500, max_bars_back = 100)
+
+// A LEVEL = the BODY extreme of a candle where price turned, followed by at least 2 solid closes the other way.
+//   A: the 2 candles right after the turn both close the other way, move at least (A mult x ATR) from the level,
+//      and neither is a doji (each body >= doji mult x ATR).
+//   C: within the next N candles, at least 2 closes go the other way and price closes at least (C mult x ATR) from the level.
+// A level found from a HIGH starts as resistance, from a LOW as support.
+//   A body CLOSE above it (on its own timeframe) flips it to GAINED (bull); a body close below flips it to LOST (bear).
+//   It keeps flipping each time a close goes through it.
+// Groups: HTF = M, W, D, 4H, 1H  |  MTF = 1H, 30m, 15m  |  LTF = 5m, 3m, 2m, 1m (only timeframes >= the chart are used).
+
+grpG   = "Timeframe groups"
+useH   = input.bool(true,  "HTF (M, W, D, 4H, 1H)", group = grpG)
+useMd  = input.bool(false, "MTF (1H, 30m, 15m)",    group = grpG)
+useL   = input.bool(false, "LTF (5m, 3m, 2m, 1m)",  group = grpG)
+maxPer = input.int(6, "Max levels kept per timeframe", minval = 1, maxval = 30, group = grpG)
+
+grpR     = "Solid reaction (A or C)"
+atrLen   = input.int(14, "ATR length", group = grpR)
+aMult    = input.float(1.0, "A: 2-candle move >= ATR x", step = 0.1, group = grpR)
+dojiMult = input.float(0.3, "A: each body >= ATR x (no dojis)", step = 0.05, group = grpR)
+cMult    = input.float(2.0, "C: move >= ATR x", step = 0.1, group = grpR)
+cBars    = input.int(5, "C: within this many candles", minval = 3, maxval = 20, group = grpR)
+leftBars = input.int(3, "Approach: look at this many candles before the turn", minval = 2, maxval = 10, group = grpR)
+leftNeed = input.int(2, "Approach: closes that must come INTO the turn", minval = 1, maxval = 10, group = grpR, tooltip = "A high needs price coming UP into it (this many up closes before the turn); a low needs price coming DOWN into it. Stops a steady grind from marking every candle.")
+
+grpC  = "Display"
+cRes  = input.color(#FF9100, "Fresh high (resistance)", group = grpC)
+cSup  = input.color(#2979FF, "Fresh low (support)",     group = grpC)
+cGain = input.color(#00E676, "Gained (bull)",           group = grpC)
+cLost = input.color(#FF1744, "Lost (bear)",             group = grpC)
+wH    = input.int(3, "HTF line width (solid)",  minval = 1, maxval = 6, group = grpC)
+wM    = input.int(2, "MTF line width (dashed)", minval = 1, maxval = 6, group = grpC)
+wL    = input.int(2, "LTF line width (dotted)", minval = 1, maxval = 6, group = grpC)
+showLbl = input.bool(true, "Labels", group = grpC)
+lblCol  = input.color(color.white, "Label text color", group = grpC)
+lblOff  = input.int(3, "Label distance right of last candle (bars)", minval = 0, maxval = 50, group = grpC)
+showTag = input.bool(true, "Price-scale tags (colored price boxes)", group = grpC)
+nTags   = input.int(12, "Max price-scale tags (nearest levels)", minval = 1, maxval = 20, group = grpC)
+
+// ---------------------------------------------------------------- detection (runs on each requested timeframe)
+detect() =>
+    float bt  = math.max(open, close)
+    float bb  = math.min(open, close)
+    float atr = ta.atr(atrLen)
+    int K = cBars
+    float hiLeft = ta.highest(bt, leftBars)
+    float loLeft = ta.lowest(bb, leftBars)
+    int upC = close > open ? 1 : 0
+    int dnC = close < open ? 1 : 0
+    float upsIn = math.sum(upC, leftBars)
+    float dnsIn = math.sum(dnC, leftBars)
+
+    // --- high side: highest body top in the last K+1 candles
+    int oH = -ta.highestbars(bt, K + 1)
+    float hiLvl = na
+    int hiT = na
+    if oH >= 2
+        float topH = bt[oH]
+        float a0 = atr[oH]
+        int downs = 0
+        float lowC = close
+        for i = 0 to oH - 1
+            if close[i] < open[i]
+                downs += 1
+            lowC := math.min(lowC, close[i])
+        bool condA = oH == 2 and downs == 2 and (topH - close) >= aMult * a0 and math.abs(close - open) >= dojiMult * a0 and math.abs(close[1] - open[1]) >= dojiMult * a0
+        bool condC = downs >= 2 and (topH - lowC) >= cMult * a0
+        // must be a real turn: price came UP into it and it tops the candles before it
+        bool leftOK = upsIn[oH + 1] >= leftNeed and topH >= hiLeft[oH + 1]
+        if (condA or condC) and leftOK
+            hiLvl := topH
+            hiT := time[oH]
+
+    // --- low side: lowest body bottom in the last K+1 candles
+    int oL = -ta.lowestbars(bb, K + 1)
+    float loLvl = na
+    int loT = na
+    if oL >= 2
+        float botL = bb[oL]
+        float a1 = atr[oL]
+        int ups = 0
+        float hiC = close
+        for i = 0 to oL - 1
+            if close[i] > open[i]
+                ups += 1
+            hiC := math.max(hiC, close[i])
+        bool condA = oL == 2 and ups == 2 and (close - botL) >= aMult * a1 and math.abs(close - open) >= dojiMult * a1 and math.abs(close[1] - open[1]) >= dojiMult * a1
+        bool condC = ups >= 2 and (hiC - botL) >= cMult * a1
+        // must be a real turn: price came DOWN into it and it is below the candles before it
+        bool leftOK = dnsIn[oL + 1] >= leftNeed and botL <= loLeft[oL + 1]
+        if (condA or condC) and leftOK
+            loLvl := botL
+            loT := time[oL]
+
+    // previous (closed) candle's values, used with lookahead_on = no repainting
+    [hiLvl[1], hiT[1], loLvl[1], loT[1], close[1], time[1]]
+
+// ---------------------------------------------------------------- level storage
+type Lvl
+    float price
+    int side      // 1 = from a high, -1 = from a low
+    int state     // 0 fresh, 1 gained, -1 lost
+    line ln
+    label lb
+    string tf
+
+var Lvl[] lv = array.new<Lvl>()
+
+grpWidth(int g) => g == 0 ? wH : g == 1 ? wM : wL
+grpStyle(int g) => g == 0 ? line.style_solid : g == 1 ? line.style_dashed : line.style_dotted
+
+addLvl(float p, int side, int t, string name, int g) =>
+    color c = side == 1 ? cRes : cSup
+    line ln = line.new(t, p, time, p, xloc = xloc.bar_time, extend = extend.right, color = c, width = grpWidth(g), style = grpStyle(g))
+    label lb = showLbl ? label.new(time, p, name + (side == 1 ? " High" : " Low"), xloc = xloc.bar_time, style = label.style_label_left, color = color.new(color.black, 100), textcolor = lblCol, size = size.normal, text_formatting = text.format_bold) : na
+    lv.push(Lvl.new(p, side, 0, ln, lb, name))
+    // keep only the newest maxPer levels of this timeframe
+    int cnt = 0
+    int n = lv.size()
+    for i = n - 1 to 0
+        Lvl x = lv.get(i)
+        if x.tf == name
+            cnt += 1
+            if cnt > maxPer
+                // retire: stop the line here (it stays on the chart's history) instead of deleting it
+                x.ln.set_extend(extend.none)
+                x.ln.set_x2(time)
+                if not na(x.lb)
+                    x.lb.delete()
+                lv.remove(i)
+
+flip(string name, float c) =>
+    if lv.size() > 0
+        for x in lv
+            if x.tf == name
+                if (x.state == -1 or (x.state == 0 and x.side == 1)) and c > x.price
+                    x.state := 1
+                    x.ln.set_color(cGain)
+                    if not na(x.lb)
+                        x.lb.set_text(name + " Gained")
+                else if (x.state == 1 or (x.state == 0 and x.side == -1)) and c < x.price
+                    x.state := -1
+                    x.ln.set_color(cLost)
+                    if not na(x.lb)
+                        x.lb.set_text(name + " Lost")
+
+run(simple string tf, string name, int g, simple bool on) =>
+    // only fetch a timeframe that is switched on and not below the chart; otherwise reuse the chart's own data (no extra memory)
+    simple bool use = on and timeframe.in_seconds(tf) >= timeframe.in_seconds(timeframe.period)
+    simple string rtf = use ? tf : timeframe.period
+    [hL, hT, lL, lT, c, t] = request.security(syminfo.tickerid, rtf, detect(), lookahead = barmerge.lookahead_on)
+    // work only when the chart candle closes (no tick-by-tick recalculation)
+    if use and barstate.isconfirmed
+        bool newTf = not na(t) and t != nz(t[1])
+        if newTf
+            // flip first using the just-closed candle, then add any new level it confirmed
+            flip(name, c)
+            if not na(hT) and hT != nz(hT[1])
+                addLvl(hL, 1, hT, name, g)
+            if not na(lT) and lT != nz(lT[1])
+                addLvl(lL, -1, lT, name, g)
+
+// ---------------------------------------------------------------- run every timeframe once (1H shared by HTF and MTF)
+run("M",   "1M",  0, useH)
+run("W",   "1W",  0, useH)
+run("D",   "1D",  0, useH)
+run("240", "4H",  0, useH)
+run("60",  "1H",  useH ? 0 : 1, useH or useMd)
+run("30",  "30m", 1, useMd)
+run("15",  "15m", 1, useMd)
+run("5",   "5m",  2, useL)
+run("3",   "3m",  2, useL)
+run("2",   "2m",  2, useL)
+run("1",   "1m",  2, useL)
+
+// keep labels just right of the last candle
+if barstate.islast and showLbl and lv.size() > 0
+    int tx = time + lblOff * timeframe.in_seconds(timeframe.period) * 1000
+    for x in lv
+        if not na(x.lb)
+            x.lb.set_x(tx)
+
+// ---------------------------------------------------------------- price-scale tags (nearest levels to price)
+lvlColor(Lvl x) => x.state == 1 ? cGain : x.state == -1 ? cLost : x.side == 1 ? cRes : cSup
+
+tagVal(int k) =>
+    float v = na
+    if barstate.islast and showTag and k < nTags and lv.size() > k
+        float[] d = array.new_float()
+        for x in lv
+            d.push(math.abs(x.price - close))
+        int[] idx = d.sort_indices(order.ascending)
+        v := lv.get(idx.get(k)).price
+    v
+
+tagCol(int k) =>
+    color c = na
+    if barstate.islast and showTag and k < nTags and lv.size() > k
+        float[] d = array.new_float()
+        for x in lv
+            d.push(math.abs(x.price - close))
+        int[] idx = d.sort_indices(order.ascending)
+        c := lvlColor(lv.get(idx.get(k)))
+    c
+
+plot(tagVal(0),  "Tag 1",  tagCol(0),  display = display.price_scale)
+plot(tagVal(1),  "Tag 2",  tagCol(1),  display = display.price_scale)
+plot(tagVal(2),  "Tag 3",  tagCol(2),  display = display.price_scale)
+plot(tagVal(3),  "Tag 4",  tagCol(3),  display = display.price_scale)
+plot(tagVal(4),  "Tag 5",  tagCol(4),  display = display.price_scale)
+plot(tagVal(5),  "Tag 6",  tagCol(5),  display = display.price_scale)
+plot(tagVal(6),  "Tag 7",  tagCol(6),  display = display.price_scale)
+plot(tagVal(7),  "Tag 8",  tagCol(7),  display = display.price_scale)
+plot(tagVal(8),  "Tag 9",  tagCol(8),  display = display.price_scale)
+plot(tagVal(9),  "Tag 10", tagCol(9),  display = display.price_scale)
+plot(tagVal(10), "Tag 11", tagCol(10), display = display.price_scale)
+plot(tagVal(11), "Tag 12", tagCol(11), display = display.price_scale)
+plot(tagVal(12), "Tag 13", tagCol(12), display = display.price_scale)
+plot(tagVal(13), "Tag 14", tagCol(13), display = display.price_scale)
+plot(tagVal(14), "Tag 15", tagCol(14), display = display.price_scale)
+plot(tagVal(15), "Tag 16", tagCol(15), display = display.price_scale)
+plot(tagVal(16), "Tag 17", tagCol(16), display = display.price_scale)
+plot(tagVal(17), "Tag 18", tagCol(17), display = display.price_scale)
+plot(tagVal(18), "Tag 19", tagCol(18), display = display.price_scale)
+plot(tagVal(19), "Tag 20", tagCol(19), display = display.price_scale)
