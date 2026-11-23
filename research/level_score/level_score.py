@@ -6,63 +6,59 @@ def rs(df,rule): return df.resample(rule,label='left',closed='left').agg({'open'
 def atr(df,n=14):
     tr=np.maximum.reduce([df.high-df.low,(df.high-df.close.shift()).abs(),(df.low-df.close.shift()).abs()]); return pd.Series(tr,index=df.index).ewm(alpha=1/n,adjust=False).mean()
 NB=400  # history buckets (log price) -> fixed memory, like a Pine array
-def score_tf(df,tf,mult,K=5,W=7,LB=365):
+def score_tf(df,tf,mult,dpb,atr_pct,K=5,W=7,LB_days=365):
     o,h,l,c,v=[df[k].values for k in ['open','high','low','close','vol']]
-    bt=np.maximum(o,c); bb=np.minimum(o,c); a=atr(df).values; n=len(df)
-    P=pd.Series(c).rolling(3).mean()-pd.Series(c).rolling(10).mean(); P=P.values
-    lo,hi=np.log(df.low.min()*0.9),np.log(df.high.max()*1.1)
-    bk=lambda x:np.clip(((np.log(x)-lo)/(hi-lo)*NB).astype(int),0,NB-1)
-    BBK=bk(bb); BTK=bk(bt)
-    out=[]
+    bt=np.maximum(o,c); bb=np.minimum(o,c); n=len(df); rng_=h-l
+    LB=int(LB_days/dpb); X30=max(1,int(30/dpb)); CAP=60/dpb; RW=max(5,int(60/dpb))
+    out=[]; seen={}
     for p in range(max(K,30),n-2):
         for side in (-1,1):
             ext=bb if side==-1 else bt
             win=ext[p-K:p+K+1]
             if (side==-1 and ext[p]>win.min()) or (side==1 and ext[p]<win.max()): continue
             lvl=ext[p]
-            # 1 move into it: from opposite extreme of prior 30 bars
+            key=(side,round(lvl))
+            if key in seen and p-seen[key]<=2: continue   # duplicate: same body edge on back-to-back candles
+            seen[key]=p
             prev=(bt if side==-1 else bb)[p-30:p]
             move=(prev.max()-lvl) if side==-1 else (lvl-prev.min())
             if move<=0: continue
-            s1=min(move/lvl/0.20,1)*2
-            # 2 reaction: from first opposite candle C1, W candles, share of move retraced (by close)
+            # 1 move into it: best of trend (% of price) and range (share of prior range height)
+            s1t=min(move/lvl/0.20,1)*2
+            rh=bt[max(0,p-RW):p+1].max()-bb[max(0,p-RW):p+1].min(); fr=move/rh if rh>0 else 0
+            s1r=2 if fr>1/3 else (1 if fr>=0.25 else 0)
+            s1=max(s1t,s1r)
+            # 2 reaction from first opposite candle C1, W candles
             j=p+1
             while j<n and not ((c[j]>o[j]) if side==-1 else (c[j]<o[j])): j+=1
             if j+W>n: continue
             rx=(c[j:j+W].max()-lvl) if side==-1 else (lvl-c[j:j+W].min())
             if rx<=0: continue
             ratio=rx/move; s2=min(ratio/0.5,1)*2
-            # 0 history: bars whose BODY covered this bucket in the LB bars before (fixed buckets)
-            b=bk(np.array([lvl]))[0]
-            j0=j+W  # end of reaction window
-            cov=(BBK<=b)&(b<=BTK)
-            hb=int(cov[max(0,p-LB):max(0,p-30)].sum())+int(cov[j0:].sum())   # before the turn + after it formed (to today)
-            s0=min(hb/60,1)*2
-            # 5 volume at the turn vs prior 50 median
-            med=np.median(v[max(0,p-50):p]) if p>0 else 0
-            rv=v[p-1:p+2].max()/med if med>0 else 1
+            # 0 history: candles whose body touched the level's zone (+-0.5 prorated ATR), before the turn and after it formed
+            half=0.5*atr_pct*lvl; cov=(bb<=lvl+half)&(bt>=lvl-half)
+            hb=int(cov[max(0,p-LB):max(0,p-X30)].sum())+int(cov[j+W:].sum())
+            s0=min(hb/CAP,1)*2
+            med=np.median(v[max(0,p-50):p]); rv=v[p-1:p+2].max()/med if med>0 else 1
             s5=float(np.clip((rv-1)/2,0,1))
-            confirm=j+W-1
-            # 3 retest + 4 momentum: first touch after confirmation (body/wick into level)
-            s3=s4=0; flip_after=None
-            for q in range(confirm+1,min(n,confirm+120)):
-                touched=(l[q]<=lvl) if side==-1 else (h[q]>=lvl)
-                if touched:
-                    held=(c[q]>lvl) if side==-1 else (c[q]<lvl)
-                    if held:
+            confirm=j+W-1; s3=0; s4=0.0
+            for q in range(confirm+1,min(n,confirm+int(120/dpb)+1)):
+                if ((l[q]<=lvl) if side==-1 else (h[q]>=lvl)):
+                    if ((c[q]>lvl) if side==-1 else (c[q]<lvl)):
                         s3=2
-                        if q+2<n and ((P[q+2]>P[q+1]>P[q]) if side==-1 else (P[q+2]<P[q+1]<P[q])): s4=1
-                    else: flip_after=q
+                        if q+3<n and q>=10:
+                            net=(c[q+3]-c[q])*(-side); ar=rng_[q-10:q].mean()
+                            s4=1.0 if net>=ar else (0.5 if net>=0.5*ar else 0.0)
                     break
-            # 6 flip history: an opposite-side turn at this price earlier (fixed bucket check of prior pivots)
             s6=0
             for r in out:
-                if r['side']==-side and abs(r['price']-lvl)<=0.5*a[p] and r['pv']<df.index[p]: s6=1;break
+                if r['side']==-side and abs(r['price']-lvl)<=half and r['pv']<df.index[p]: s6=1;break
             raw=s0+s1+s2+s3+s4+s5+s6
             score=min(raw/11*10*mult,10)
-            out.append(dict(tf=tf,pv=df.index[p],side=side,price=round(lvl),hist=round(s0,1),move=round(s1,1),react=round(s2,1),retest=s3,momo=s4,vol=round(s5,1),flip=s6,score=round(score,1),move_pct=round(move/lvl*100,1),react_pct=round(ratio*100)))
+            out.append(dict(tf=tf,pv=df.index[p],side=side,price=round(lvl),hist=round(s0,1),move=round(s1,1),react=round(s2,1),retest=s3,momo=s4,vol=round(s5,1),flip=s6,score=round(score,1),move_pct=round(move/lvl*100,1),move_of_range=round(fr*100),react_pct=round(ratio*100),hist_bars=hb))
     return pd.DataFrame(out)
-lvD=score_tf(d,'D',1.0); lvW=score_tf(rs(d,'W-MON'),'W',1.15,K=3,W=4,LB=104)
+APCT=(atr(d).iloc[-1]/d.close.iloc[-1])
+lvD=score_tf(d,'D',1.0,1,APCT); lvW=score_tf(rs(d,'W-MON'),'W',1.15,7,APCT,K=3,W=4)
 L=pd.concat([lvD,lvW]); L.to_csv('level_scores.csv',index=False)
 QUAL=3.0
 def zones(L,atr_now,asof):
