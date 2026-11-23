@@ -1,0 +1,417 @@
+//@version=6
+indicator("Circles, Dots and Lights", shorttitle = "Circles, Dots and Lights", overlay = true, max_labels_count = 500)
+
+// DOTS (PMO / WaveTrend, same math as PMO HTF: hlc3, 9/12/3): wt1 crossing wt2.
+//   Green DOT    = cross up with wt2 at or below -level   (●)
+//   Green circle = any other cross up                      (○)
+//   Red circle   = any other cross down                    (○)
+//   Red DOT      = cross down with wt2 at or above +level  (●)
+// LIGHTS: 9/20/50 cloud slope or PMO ribbon (EMA11/EMA34), same options as Entry Alerts BTC.
+// Chart: dots/circles for the chart's own timeframe: solid on CLOSED candles, faded LIVE marker on the forming candle (optional).
+// Table: M, W, D, 4H, 1H, 15m with three states per timeframe:
+//   CONFIRMED = last signal on a CLOSED candle.
+//   LIVE      = a cross on the candle that is still forming (rebuilt from the chart's candles).
+//   CONFIDENT = the LIVE signal has held continuously for the hold time (late or on-time doesn't matter).
+//   LIVE / CONFIDENT are timed on finer candles (M on 4H, W on 1H, D on 15m, 4H on 5m, 1H/15m on 1m), so they read the same on any chart.
+// Light panel: one light per timeframe, 1m to M, on CLOSED bars.
+
+grpC = "Light source"
+filt = input.string("9/20/50 cloud slope", "Filter", options = ["9/20/50 cloud slope", "PMO ribbon (EMA11/EMA34)"], group = grpC)
+eF   = input.int(9,  "Cloud fast",  group = grpC, inline = "e")
+eM   = input.int(20, "medium",      group = grpC, inline = "e")
+eS   = input.int(50, "slow",        group = grpC, inline = "e")
+rF   = input.int(11, "Ribbon fast", group = grpC, inline = "r")
+rS   = input.int(34, "slow",        group = grpC, inline = "r")
+
+grpW = "PMO (WaveTrend)"
+n1   = input.int(9,  "Channel length", group = grpW, tooltip = "Matches PMO HTF: 9 / 12 / 3")
+n2   = input.int(12, "Average length", group = grpW)
+n3   = input.int(3,  "Signal (MA) length", options = [3, 4], group = grpW)
+lvl  = input.float(53, "Dot level (±)", group = grpW)
+showChart = input.bool(true, "Show dots/circles on chart", group = grpW)
+showLive  = input.bool(true, "Show LIVE marker on the forming candle", group = grpW, tooltip = "Draws the dot/circle on the candle that is still open, faded, so the chart matches the table's LIVE state. It can disappear if the cross undoes before the close. Turns solid once the candle closes.")
+liveTr    = input.int(55, "LIVE marker fade (0 = solid, 90 = faint)", minval = 0, maxval = 90, group = grpW)
+
+grpK = "Chart markers"
+shGD  = input.bool(true, "Green dot",    group = grpK, inline = "gd")
+colGD = input.color(#00E676, "",         group = grpK, inline = "gd")
+szGD  = input.string("Normal", "", options = ["Tiny", "Small", "Normal", "Large", "Huge"], group = grpK, inline = "gd")
+shGC  = input.bool(true, "Green circle", group = grpK, inline = "gc")
+colGC = input.color(#00E676, "",         group = grpK, inline = "gc")
+szGC  = input.string("Normal", "", options = ["Tiny", "Small", "Normal", "Large", "Huge"], group = grpK, inline = "gc")
+shRC  = input.bool(true, "Red circle",   group = grpK, inline = "rc")
+colRC = input.color(#FF1744, "",         group = grpK, inline = "rc")
+szRC  = input.string("Normal", "", options = ["Tiny", "Small", "Normal", "Large", "Huge"], group = grpK, inline = "rc")
+shRD  = input.bool(true, "Red dot",      group = grpK, inline = "rd")
+colRD = input.color(#FF1744, "",         group = grpK, inline = "rd")
+szRD  = input.string("Normal", "", options = ["Tiny", "Small", "Normal", "Large", "Huge"], group = grpK, inline = "rd")
+
+grpT = "Table rows (on / alerts on CONFIRMED / alerts on CONFIDENT)"
+uM   = input.bool(true,  "M",   group = grpT, inline = "M")
+aM   = input.bool(true,  "Confirmed alerts", group = grpT, inline = "M")
+cM   = input.bool(true,  "Confident alerts", group = grpT, inline = "M")
+uW   = input.bool(true,  "W",   group = grpT, inline = "W")
+aW   = input.bool(true,  "Confirmed alerts", group = grpT, inline = "W")
+cW   = input.bool(true,  "Confident alerts", group = grpT, inline = "W")
+uD   = input.bool(true,  "D",   group = grpT, inline = "D")
+aD   = input.bool(false, "Confirmed alerts", group = grpT, inline = "D")
+cD   = input.bool(false, "Confident alerts", group = grpT, inline = "D")
+u4   = input.bool(true,  "4H",  group = grpT, inline = "4")
+a4   = input.bool(false, "Confirmed alerts", group = grpT, inline = "4")
+c4   = input.bool(false, "Confident alerts", group = grpT, inline = "4")
+u1   = input.bool(true,  "1H",  group = grpT, inline = "1")
+a1   = input.bool(false, "Confirmed alerts", group = grpT, inline = "1")
+c1   = input.bool(false, "Confident alerts", group = grpT, inline = "1")
+u15  = input.bool(true,  "15m", group = grpT, inline = "15")
+a15  = input.bool(false, "Confirmed alerts", group = grpT, inline = "15")
+c15  = input.bool(false, "Confident alerts", group = grpT, inline = "15")
+
+grpH = "CONFIDENT hold times (live signal must hold this long)"
+hM   = input.float(7,   "M (days)",     group = grpH)
+hW   = input.float(24,  "W (hours)",    group = grpH)
+hD   = input.float(120, "D (minutes)",  group = grpH)
+h4   = input.float(30,  "4H (minutes)", group = grpH)
+h1   = input.float(10,  "1H (minutes)", group = grpH)
+h15  = input.float(5,   "15m (minutes)", group = grpH)
+
+grpS  = "Display"
+posIn = input.string("Top right", "Table position", options = ["Top right", "Top center", "Top left", "Middle right", "Middle center", "Middle left", "Bottom right", "Bottom center", "Bottom left"], group = grpS)
+szIn  = input.string("Normal", "Size", options = ["Small", "Normal", "Large"], group = grpS)
+cG    = input.color(#00E676, "Green",  group = grpS, inline = "c")
+cY    = input.color(#FFD600, "Yellow", group = grpS, inline = "c")
+cR    = input.color(#FF1744, "Red",    group = grpS, inline = "c")
+cN    = input.color(#9E9E9E, "None",   group = grpS, inline = "c")
+cBg   = input.color(#2A2E39, "Background", group = grpS)
+
+grpP   = "Light panel"
+showP  = input.bool(true, "Show light panel", group = grpP)
+pPosIn = input.string("Bottom right", "Panel position", options = ["Top right", "Top center", "Top left", "Middle right", "Middle center", "Middle left", "Bottom right", "Bottom center", "Bottom left"], group = grpP)
+p1   = input.bool(true, "1m",  group = grpP, inline = "p1")
+p2   = input.bool(true, "2m",  group = grpP, inline = "p1")
+p3   = input.bool(true, "3m",  group = grpP, inline = "p1")
+p5   = input.bool(true, "5m",  group = grpP, inline = "p1")
+p15  = input.bool(true, "15m", group = grpP, inline = "p1")
+p60  = input.bool(true, "1H",  group = grpP, inline = "p2")
+p240 = input.bool(true, "4H",  group = grpP, inline = "p2")
+pD   = input.bool(true, "D",   group = grpP, inline = "p2")
+pW   = input.bool(true, "W",   group = grpP, inline = "p2")
+pM   = input.bool(true, "M",   group = grpP, inline = "p2")
+
+useRib = filt == "PMO ribbon (EMA11/EMA34)"
+k1 = 2.0 / (n1 + 1)
+k2 = 2.0 / (n2 + 1)
+
+wtFull() =>
+    ap  = hlc3
+    esa = ta.ema(ap, n1)
+    d   = ta.ema(math.abs(ap - esa), n1)
+    ci  = d > 0 ? (ap - esa) / (0.015 * d) : 0.0
+    w1  = ta.ema(ci, n2)
+    w2  = ta.sma(w1, n3)
+    [esa, d, w1, w2]
+
+cloudState() =>
+    a   = ta.ema(close, eF)
+    b   = ta.ema(close, eM)
+    c   = ta.ema(close, eS)
+    top = math.max(a, b, c)
+    bot = math.min(a, b, c)
+    lg  = bot > bot[1]
+    sh  = top < top[1]
+    lg and sh ? 2 : lg ? 1 : sh ? -1 : 0
+
+ribState() =>
+    ta.ema(close, rF) > ta.ema(close, rS) ? 1 : -1
+
+// ---- chart timeframe dots/circles (closed candles only)
+[cEsa, cD0, cw1, cw2] = wtFull()
+cUp  = ta.crossover(cw1, cw2)
+cDn  = ta.crossunder(cw1, cw2)
+cf   = barstate.isconfirmed
+ok   = cf or showLive
+gDot = ok and cUp and cw2 <= -lvl
+gCir = ok and cUp and not (cw2 <= -lvl)
+rDot = ok and cDn and cw2 >= lvl
+rCir = ok and cDn and not (cw2 >= lvl)
+// solid when the candle is closed, faded while it is still forming
+fz(color c) => cf ? c : color.new(c, liveTr)
+mGD = fz(colGD)
+mGC = fz(colGC)
+mRC = fz(colRC)
+mRD = fz(colRD)
+// Chart markers: one plot per size (Pine needs a fixed size per plot), only the chosen size draws.
+mk(bool on, string sz, string want) => showChart and on and sz == want
+plotchar(mk(gDot and shGD, szGD, "Tiny"),   "Green dot tiny",   "●", location.belowbar, mGD, size = size.tiny)
+plotchar(mk(gDot and shGD, szGD, "Small"),  "Green dot small",  "●", location.belowbar, mGD, size = size.small)
+plotchar(mk(gDot and shGD, szGD, "Normal"), "Green dot normal", "●", location.belowbar, mGD, size = size.normal)
+plotchar(mk(gDot and shGD, szGD, "Large"),  "Green dot large",  "●", location.belowbar, mGD, size = size.large)
+plotchar(mk(gDot and shGD, szGD, "Huge"),   "Green dot huge",   "●", location.belowbar, mGD, size = size.huge)
+plotchar(mk(gCir and shGC, szGC, "Tiny"),   "Green circle tiny",   "○", location.belowbar, mGC, size = size.tiny)
+plotchar(mk(gCir and shGC, szGC, "Small"),  "Green circle small",  "○", location.belowbar, mGC, size = size.small)
+plotchar(mk(gCir and shGC, szGC, "Normal"), "Green circle normal", "○", location.belowbar, mGC, size = size.normal)
+plotchar(mk(gCir and shGC, szGC, "Large"),  "Green circle large",  "○", location.belowbar, mGC, size = size.large)
+plotchar(mk(gCir and shGC, szGC, "Huge"),   "Green circle huge",   "○", location.belowbar, mGC, size = size.huge)
+plotchar(mk(rCir and shRC, szRC, "Tiny"),   "Red circle tiny",   "○", location.abovebar, mRC, size = size.tiny)
+plotchar(mk(rCir and shRC, szRC, "Small"),  "Red circle small",  "○", location.abovebar, mRC, size = size.small)
+plotchar(mk(rCir and shRC, szRC, "Normal"), "Red circle normal", "○", location.abovebar, mRC, size = size.normal)
+plotchar(mk(rCir and shRC, szRC, "Large"),  "Red circle large",  "○", location.abovebar, mRC, size = size.large)
+plotchar(mk(rCir and shRC, szRC, "Huge"),   "Red circle huge",   "○", location.abovebar, mRC, size = size.huge)
+plotchar(mk(rDot and shRD, szRD, "Tiny"),   "Red dot tiny",   "●", location.abovebar, mRD, size = size.tiny)
+plotchar(mk(rDot and shRD, szRD, "Small"),  "Red dot small",  "●", location.abovebar, mRD, size = size.small)
+plotchar(mk(rDot and shRD, szRD, "Normal"), "Red dot normal", "●", location.abovebar, mRD, size = size.normal)
+plotchar(mk(rDot and shRD, szRD, "Large"),  "Red dot large",  "●", location.abovebar, mRD, size = size.large)
+plotchar(mk(rDot and shRD, szRD, "Huge"),   "Red dot huge",   "●", location.abovebar, mRD, size = size.huge)
+
+lowerTF(string tf) => timeframe.in_seconds(tf) < timeframe.in_seconds()
+
+// confirmed signal + last closed WaveTrend state, in one request
+fullFeed() =>
+    [esa, d, w1, w2] = wtFull()
+    up = ta.crossover(w1, w2)
+    dn = ta.crossunder(w1, w2)
+    var int ev = 0
+    if up
+        ev := w2 <= -lvl ? 2 : 1
+    if dn
+        ev := w2 >= lvl ? -2 : -1
+    cs = cloudState()
+    rs = ribState()
+    lt = useRib ? rs : cs
+    [ev[1], lt[1], w2[1], time[1], esa[1], d[1], w1[1], w1[2], w1[3], w2[1]]
+
+// one row. tf = row timeframe, f = fine timeframe used to time the hold (same result on any chart)
+rowCalc(string tf, string f, float holdMs, float winMs) =>
+    int   e = na
+    int   l = na
+    float w = na
+    int   t = na
+    float esaP = na
+    float dP = na
+    float w1P = na
+    float w1P2 = na
+    float w1P3 = na
+    float w2P = na
+    if lowerTF(tf)
+        [ea, la, wa, tA, sA, dA, aA, bA, cA, zA] = request.security_lower_tf(syminfo.tickerid, lowerTF(tf) ? tf : timeframe.period, fullFeed())
+        if ea.size() > 0
+            e := ea.last()
+            l := la.last()
+            w := wa.last()
+            t := tA.last()
+            esaP := sA.last()
+            dP := dA.last()
+            w1P := aA.last()
+            w1P2 := bA.last()
+            w1P3 := cA.last()
+            w2P := zA.last()
+    else
+        [e0, l0, w0, t0_, s0, d0, a0, b0, c0, z0] = request.security(syminfo.tickerid, lowerTF(tf) ? timeframe.period : tf, fullFeed(), lookahead = barmerge.lookahead_on)
+        e := e0
+        l := l0
+        w := w0
+        t := t0_
+        esaP := s0
+        dP := d0
+        w1P := a0
+        w1P2 := b0
+        w1P3 := c0
+        w2P := z0
+    var int   cur    = 0
+    var int   tStart = na
+    var int   cStart = na
+    var float ph     = na
+    var float pl     = na
+    var float w2L    = na
+    var float w1L    = na
+    var int   lastT  = na
+    if time_close >= timenow - winMs
+        ftA  = array.new<int>()
+        ftcA = array.new<int>()
+        fhA  = array.new<float>()
+        flA  = array.new<float>()
+        fcA  = array.new<float>()
+        fsA  = array.new<int>()
+        fEff = timeframe.in_seconds(f) < timeframe.in_seconds() ? f : timeframe.period
+        [a1_, a2_, a3_, a4_, a5_, a6_] = request.security_lower_tf(syminfo.tickerid, fEff, [time, time_close, high, low, close, time(tf)])
+        ftA := a1_
+        ftcA := a2_
+        fhA := a3_
+        flA := a4_
+        fcA := a5_
+        fsA := a6_
+        if ftA.size() > 0 and not na(w1P) and not na(w2P)
+            for i = 0 to ftA.size() - 1
+                st0 = fsA.get(i)
+                if na(cStart) or st0 != cStart
+                    cStart := st0
+                    ph := fhA.get(i)
+                    pl := flA.get(i)
+                    cur := 0
+                    tStart := na
+                else
+                    ph := math.max(ph, fhA.get(i))
+                    pl := math.min(pl, flA.get(i))
+                ap  = (ph + pl + fcA.get(i)) / 3
+                esa = esaP + k1 * (ap - esaP)
+                dd  = dP + k1 * (math.abs(ap - esa) - dP)
+                ci  = dd > 0 ? (ap - esa) / (0.015 * dd) : 0.0
+                ww1 = w1P + k2 * (ci - w1P)
+                ww2 = n3 == 3 ? (ww1 + w1P + w1P2) / 3 : (ww1 + w1P + w1P2 + w1P3) / 4
+                int si = 0
+                if ww1 > ww2 and w1P <= w2P
+                    si := ww2 <= -lvl ? 2 : 1
+                else if ww1 < ww2 and w1P >= w2P
+                    si := ww2 >= lvl ? -2 : -1
+                if si != cur
+                    cur := si
+                    tStart := si != 0 ? ftA.get(i) : na
+                w2L := ww2
+                w1L := ww1
+                lastT := ftcA.get(i)
+    nowT = barstate.isrealtime ? timenow : nz(lastT, time_close)
+    held = (cur != 0 and not na(tStart)) ? nowT - tStart : 0
+    conf = cur != 0 and held >= holdMs
+    [e, l, w, t, cur, w2L, held, conf, true, w1L]
+
+[eM_, lM_, wM_, tM_, sM_, w2M_, heldM_, confM_, okM_, fM_] = rowCalc("M",   "240", hM * 86400000.0, 62 * 86400000.0)
+[eW_, lW_, wW_, tW_, sW_, w2W_, heldW_, confW_, okW_, fW_] = rowCalc("W",   "60",  hW * 3600000.0,  15 * 86400000.0)
+[eD_, lD_, wD_, tD_, sD_, w2D_, heldD_, confD_, okD_, fD_] = rowCalc("D",   "15",  hD * 60000.0,    2 * 86400000.0)
+[e4_, l4_, w4_, t4_, s4_, w24_, held4_, conf4_, ok4_, f4_] = rowCalc("240", "5",   h4 * 60000.0,    10 * 3600000.0)
+[e1_, l1_, w1_, t1_, s1_, w21_, held1_, conf1_, ok1_, f1_] = rowCalc("60",  "1",   h1 * 60000.0,    3 * 3600000.0)
+[eQ_, lQ_, wQ_, tQ_, sQ_, w2Q_, heldQ_, confQ_, okQ_, fQ_] = rowCalc("15",  "1",   h15 * 60000.0,   1 * 3600000.0)
+
+evTxt(int e) => e == 2 ? "● Green dot" : e == 1 ? "○ Green circle" : e == -1 ? "○ Red circle" : e == -2 ? "● Red dot" : "—"
+evCol(int e) => e > 0 ? cG : e < 0 ? cR : cN
+ltTxt(int l) => l == 1 ? "Green" : l == 2 ? "Yellow" : l == -1 ? "Red" : "None"
+ltCol(int l) => l == 1 ? cG : l == 2 ? cY : l == -1 ? cR : cN
+tfTxt(string tf) => tf == "240" ? "4H" : tf == "60" ? "1H" : tf == "15" ? "15m" : tf
+nextTxt(float w1L, float w2L) =>
+    string tx = "—"
+    color  cl = cN
+    if not na(w1L) and not na(w2L)
+        if w1L >= w2L
+            cl := cR
+            tx := w2L >= lvl ? "Red zone: waiting for cross" : "Red: " + str.tostring(lvl - w2L, "#.0") + " (" + str.tostring(math.max(0, w2L) / lvl * 100, "#") + "%)"
+        else
+            cl := cG
+            tx := w2L <= -lvl ? "Green zone: waiting for cross" : "Green: " + str.tostring(w2L + lvl, "#.0") + " (" + str.tostring(math.max(0, -w2L) / lvl * 100, "#") + "%)"
+    [tx, cl]
+durTxt(float ms) => ms >= 86400000 ? str.tostring(ms / 86400000.0, "#.#") + "d" : ms >= 3600000 ? str.tostring(ms / 3600000.0, "#.#") + "h" : str.tostring(ms / 60000.0, "#") + "m"
+
+// ---- alerts
+confirmedAlert(string tf, bool on, int e, int l, int t) =>
+    newBar = not na(t) and t != nz(t[1])
+    if on and newBar and not lowerTF(tf)
+        if e != nz(e[1]) and e != 0
+            alert(syminfo.ticker + " " + tfTxt(tf) + " CONFIRMED PMO: " + evTxt(e), alert.freq_once_per_bar)
+        if l != nz(l[1])
+            alert(syminfo.ticker + " " + tfTxt(tf) + " light: " + ltTxt(l), alert.freq_once_per_bar)
+
+confidentAlert(string tf, bool on, bool conf, int s) =>
+    if on and conf and not conf[1]
+        alert(syminfo.ticker + " " + tfTxt(tf) + " CONFIDENT (live, not closed): " + evTxt(s), alert.freq_once_per_bar)
+
+confirmedAlert("M",   uM and aM,   eM_, lM_, tM_)
+confirmedAlert("W",   uW and aW,   eW_, lW_, tW_)
+confirmedAlert("D",   uD and aD,   eD_, lD_, tD_)
+confirmedAlert("240", u4 and a4,   e4_, l4_, t4_)
+confirmedAlert("60",  u1 and a1,   e1_, l1_, t1_)
+confirmedAlert("15",  u15 and a15, eQ_, lQ_, tQ_)
+confidentAlert("M",   uM and cM,   confM_, sM_)
+confidentAlert("W",   uW and cW,   confW_, sW_)
+confidentAlert("D",   uD and cD,   confD_, sD_)
+confidentAlert("240", u4 and c4,   conf4_, s4_)
+confidentAlert("60",  u1 and c1,   conf1_, s1_)
+confidentAlert("15",  u15 and c15, confQ_, sQ_)
+
+// ---- table
+toPos(string p) =>
+    switch p
+        "Top right"     => position.top_right
+        "Top center"    => position.top_center
+        "Top left"      => position.top_left
+        "Middle right"  => position.middle_right
+        "Middle center" => position.middle_center
+        "Middle left"   => position.middle_left
+        "Bottom right"  => position.bottom_right
+        "Bottom center" => position.bottom_center
+        => position.bottom_left
+pos = toPos(posIn)
+tsz = szIn == "Small" ? size.small : szIn == "Large" ? size.large : size.normal
+var table tb = table.new(pos, 6, 7, bgcolor = cBg, border_width = 1, border_color = color.new(color.white, 85))
+
+row(int r, bool on, string tf, int e, int s, float w2L, float held, float holdMs, bool conf, bool ok, float w1L) =>
+    if on
+        tb.cell(0, r, tfTxt(tf), text_color = color.white, text_size = tsz)
+        tb.cell(1, r, evTxt(nz(e)), text_color = evCol(nz(e)), text_size = tsz)
+        if ok
+            tb.cell(2, r, conf ? evTxt(s) : s != 0 ? "held " + durTxt(held) + " / " + durTxt(holdMs) : "—", text_color = conf ? evCol(s) : cN, text_size = tsz)
+            tb.cell(3, r, evTxt(s), text_color = evCol(s), text_size = tsz)
+            tb.cell(4, r, na(w2L) ? "—" : str.tostring(w2L, "#.0"), text_color = color.white, text_size = tsz)
+            [nx, nc] = nextTxt(w1L, w2L)
+            tb.cell(5, r, nx, text_color = nc, text_size = tsz)
+        else
+            tb.cell(2, r, "lower TF", text_color = cN, text_size = tsz)
+            tb.cell(3, r, "lower TF", text_color = cN, text_size = tsz)
+            tb.cell(4, r, "—", text_color = cN, text_size = tsz)
+            tb.cell(5, r, "—", text_color = cN, text_size = tsz)
+
+if barstate.islast
+    tb.clear(0, 0, 5, 6)
+    tb.cell(0, 0, "TF", text_color = color.white, text_size = tsz)
+    tb.cell(1, 0, "Confirmed", text_color = color.white, text_size = tsz)
+    tb.cell(2, 0, "Confident", text_color = color.white, text_size = tsz)
+    tb.cell(3, 0, "Live", text_color = color.white, text_size = tsz)
+    tb.cell(4, 0, "WT2 live", text_color = color.white, text_size = tsz)
+    tb.cell(5, 0, "Next dot", text_color = color.white, text_size = tsz)
+    row(1, uM,  "M",   eM_, sM_, w2M_, heldM_, hM * 86400000.0, confM_, okM_, fM_)
+    row(2, uW,  "W",   eW_, sW_, w2W_, heldW_, hW * 3600000.0,  confW_, okW_, fW_)
+    row(3, uD,  "D",   eD_, sD_, w2D_, heldD_, hD * 60000.0,    confD_, okD_, fD_)
+    row(4, u4,  "240", e4_, s4_, w24_, held4_, h4 * 60000.0,    conf4_, ok4_, f4_)
+    row(5, u1,  "60",  e1_, s1_, w21_, held1_, h1 * 60000.0,    conf1_, ok1_, f1_)
+    row(6, u15, "15",  eQ_, sQ_, w2Q_, heldQ_, h15 * 60000.0,   confQ_, okQ_, fQ_)
+
+// ---- light panel (closed bars, same as the rules and backtests)
+liveLight() =>
+    cs = cloudState()
+    rs = ribState()
+    lt = useRib ? rs : cs
+    lt[1]
+
+getLight(string tf) =>
+    int v = na
+    if lowerTF(tf)
+        arr = request.security_lower_tf(syminfo.tickerid, lowerTF(tf) ? tf : timeframe.period, liveLight())
+        if arr.size() > 0
+            v := arr.last()
+    else
+        v := request.security(syminfo.tickerid, lowerTF(tf) ? timeframe.period : tf, liveLight(), lookahead = barmerge.lookahead_on)
+    v
+
+q1   = getLight("1")
+q2   = getLight("2")
+q3   = getLight("3")
+q5   = getLight("5")
+q15  = getLight("15")
+q60  = getLight("60")
+q240 = getLight("240")
+qD   = getLight("D")
+qW   = getLight("W")
+qM   = getLight("M")
+
+pPos = toPos(pPosIn)
+var table pt = table.new(pPos, 11, 2, bgcolor = cBg, border_width = 1, border_color = color.new(color.white, 85))
+
+if barstate.islast and showP
+    pt.clear(0, 0, 10, 1)
+    pt.cell(0, 0, useRib ? "Ribbon" : "Cloud", text_color = color.white, text_size = tsz)
+    pt.cell(0, 1, "", text_size = tsz)
+    pnames = array.from("1m", "2m", "3m", "5m", "15m", "1H", "4H", "D", "W", "M")
+    pons   = array.from(p1, p2, p3, p5, p15, p60, p240, pD, pW, pM)
+    pvals  = array.from(q1, q2, q3, q5, q15, q60, q240, qD, qW, qM)
+    pc = 1
+    for i = 0 to 9
+        if pons.get(i)
+            pt.cell(pc, 0, pnames.get(i), text_color = color.white, text_size = tsz)
+            pt.cell(pc, 1, "●", text_color = ltCol(nz(pvals.get(i))), text_size = tsz)
+            pc += 1
