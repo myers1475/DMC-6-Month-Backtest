@@ -12,6 +12,7 @@ indicator("Relative Strength Levels", shorttitle = "RSL", overlay = true, max_bo
 //   6 Flip      - an opposite-side turn at the same price earlier (support <-> resistance)
 // A level qualifies if it is in the top X% of its own timeframe. Nearby qualified levels merge into a ZONE
 // (width = chart ATR as % of price, prorated to the zone's price). Zone rs (0-10) = rank against all zones on the chart.
+// Each timeframe is scored on its OWN history (request.security), so HTF zones are the same on any chart.
 // Timeframes below the chart are not used. Work happens only when a timeframe's candle closes (memory/CPU light).
 
 grpG  = "Timeframe groups"
@@ -25,6 +26,7 @@ mergeW   = input.float(0.75, "Merge levels within (x ATR%)", step = 0.05, group 
 capW     = input.float(1.0, "Max zone width (x ATR%)", step = 0.05, group = grpS)
 maxStore = input.int(150, "Levels stored per timeframe", minval = 20, maxval = 300, group = grpS)
 NMAX     = input.int(500, "Candles kept per timeframe", minval = 100, maxval = 1000, group = grpS)
+ownW     = input.bool(true, "Higher-timeframe zones keep their own width", group = grpS, tooltip = "On: a weekly zone is as wide on a 5m chart as on the weekly. Off: every zone uses the chart timeframe's ATR.")
 
 grpC   = "Display"
 nAbove = input.int(6, "Zones shown above price", minval = 0, maxval = 30, group = grpC)
@@ -39,21 +41,6 @@ lblCol = input.color(color.white, "Label text color", group = grpC)
 lblOff = input.int(3, "Label distance right of last candle (bars)", minval = 0, maxval = 50, group = grpC)
 
 // ---------------------------------------------------------------- types
-type Feed
-    string name
-    float mult
-    float dpb
-    int K
-    int W
-    array<float> o
-    array<float> h
-    array<float> l
-    array<float> c
-    array<float> v
-    array<int> t
-    int base = 0
-    int n = -1
-
 type Cand
     string tf
     int side
@@ -85,11 +72,26 @@ type Lvl
     bool done = false
     float score = 0.0
 
-var array<Cand> cands = array.new<Cand>()
-var array<Lvl>  lv    = array.new<Lvl>()
+type Feed
+    string name
+    float mult
+    float dpb
+    int K
+    int W
+    array<float> o
+    array<float> h
+    array<float> l
+    array<float> c
+    array<float> v
+    array<int> t
+    array<Cand> cands
+    array<Lvl> lv
+    int base = 0
+    int n = -1
+
 
 newFeed(string name, float mult, float dpb, int K, int W) =>
-    Feed.new(name, mult, dpb, K, W, array.new<float>(), array.new<float>(), array.new<float>(), array.new<float>(), array.new<float>(), array.new<int>())
+    Feed.new(name, mult, dpb, K, W, array.new<float>(), array.new<float>(), array.new<float>(), array.new<float>(), array.new<float>(), array.new<int>(), array.new<Cand>(), array.new<Lvl>())
 
 // ---------------------------------------------------------------- helpers
 gO(Feed f, int i) => f.o.get(i - f.base)
@@ -129,8 +131,8 @@ updateLevels(Feed f) =>
     float l_ = f.l.get(n - f.base)
     float bT = math.max(o_, c_)
     float bB = math.min(o_, c_)
-    if lv.size() > 0
-        for x in lv
+    if f.lv.size() > 0
+        for x in f.lv
             if x.tf == f.name and n > x.confAbs
                 if bB <= x.price + x.half and bT >= x.price - x.half
                     x.hAfter := x.hAfter + 1
@@ -167,12 +169,12 @@ detectTurns(Feed f) =>
                     break
             if ext
                 bool dup = false
-                if cands.size() > 0
-                    for cd in cands
+                if f.cands.size() > 0
+                    for cd in f.cands
                         if cd.tf == f.name and cd.side == side and math.abs(cd.price - lvl) <= lvl * 1e-6 and math.abs(cd.p - p) <= 2
                             dup := true
-                if lv.size() > 0 and not dup
-                    for x in lv
+                if f.lv.size() > 0 and not dup
+                    for x in f.lv
                         if x.tf == f.name and x.side == side and math.abs(x.price - lvl) <= lvl * 1e-6 and math.abs(x.pAbs - p) <= 2
                             dup := true
                 if not dup
@@ -181,7 +183,7 @@ detectTurns(Feed f) =>
                         if isOpp(f, k, side)
                             cd.j := k
                             break
-                    cands.push(cd)
+                    f.cands.push(cd)
 
 // score a candidate once its reaction window (W candles from C1) is complete
 finalize(Feed f, Cand cd, float atrP) =>
@@ -232,76 +234,96 @@ finalize(Feed f, Cand cd, float atrP) =>
         float s5 = med > 0 ? math.max(0.0, math.min(1.0, (vmax / med - 1.0) / 2.0)) : 0.0
         // 6 flip
         float s6 = 0.0
-        if lv.size() > 0
-            for x in lv
+        if f.lv.size() > 0
+            for x in f.lv
                 if x.tf == f.name and x.side == -side and math.abs(x.price - lvl) <= half and x.pAbs < p
                     s6 := 1.0
                     break
         int conf = cd.j + f.W - 1
         Lvl nl = Lvl.new(f.name, side, lvl, p, cd.tPiv, half, f.mult, conf, conf + winBars(f, 120, 5, 120), float(winBars(f, 60, 2, 60)), hb, math.max(s1t, s1r), s2, s5, s6)
         calcScore(nl)
-        lv.push(nl)
+        f.lv.push(nl)
         // keep only the newest maxStore levels of this timeframe
         int cnt = 0
         int oldest = -1
-        for i = lv.size() - 1 to 0
-            if lv.get(i).tf == f.name
+        for i = f.lv.size() - 1 to 0
+            if f.lv.get(i).tf == f.name
                 cnt += 1
                 oldest := i
         if cnt > maxStore and oldest >= 0
-            lv.remove(oldest)
+            f.lv.remove(oldest)
 
 processCands(Feed f, float atrP) =>
     int n = f.n
-    if cands.size() > 0
-        for i = cands.size() - 1 to 0
-            Cand cd = cands.get(i)
+    if f.cands.size() > 0
+        for i = f.cands.size() - 1 to 0
+            Cand cd = f.cands.get(i)
             if cd.tf == f.name
                 if cd.j < 0 and n > cd.p and isOpp(f, n, cd.side)
                     cd.j := n
                 if cd.j >= 0 and n >= cd.j + f.W - 1
                     if cd.p - 1 >= f.base
                         finalize(f, cd, atrP)
-                    cands.remove(i)
+                    f.cands.remove(i)
                 else if cd.j < 0 and n - cd.p > 30
-                    cands.remove(i)
+                    f.cands.remove(i)
 
 float atrPct = ta.atr(14) / close
 
-run(Feed f, simple string tf, simple bool on) =>
-    simple bool use = on and timeframe.in_seconds(tf) >= timeframe.in_seconds(timeframe.period)
-    simple string rtf = use ? tf : timeframe.period
-    [o_, h_, l_, c_, v_, t_] = request.security(syminfo.tickerid, rtf, [open[1], high[1], low[1], close[1], volume[1], time[1]], lookahead = barmerge.lookahead_on)
-    if use and barstate.isconfirmed and not na(t_) and t_ != nz(t_[1]) and not na(c_)
-        pushBar(f, o_, h_, l_, c_, nz(v_), t_)
+// each timeframe runs on its OWN full history inside request.security and hands back its scored levels
+engine(string name, float mult, float dpb, int K, int W, bool on) =>
+    var Feed f = newFeed(name, mult, dpb, K, W)
+    var array<float> eP = array.new<float>()
+    var array<float> eS = array.new<float>()
+    var array<int>   eT = array.new<int>()
+    var float eA = na
+    float aP = ta.atr(14) / close
+    if on and barstate.isconfirmed
+        pushBar(f, open, high, low, close, nz(volume), time)
         updateLevels(f)
         detectTurns(f)
-        processCands(f, atrPct)
+        processCands(f, aP)
+        eP.clear()
+        eS.clear()
+        eT.clear()
+        if f.lv.size() > 0
+            for x in f.lv
+                eP.push(x.price)
+                eS.push(x.score)
+                eT.push(x.tPiv)
+        eA := aP
+    [eP, eS, eT, eA]
 
-// ---------------------------------------------------------------- feeds (name, weight, days per candle, K, reaction window)
-var Feed fM   = newFeed("M",   1.30, 30.0,       2, 3)
-var Feed fW   = newFeed("W",   1.15, 7.0,        3, 4)
-var Feed fD   = newFeed("D",   1.00, 1.0,        5, 7)
-var Feed f4   = newFeed("4H",  0.95, 1.0 / 6,    5, 7)
-var Feed f1   = newFeed("1H",  0.90, 1.0 / 24,   5, 7)
-var Feed f30  = newFeed("30m", 0.85, 1.0 / 48,   5, 7)
-var Feed f15  = newFeed("15m", 0.85, 1.0 / 96,   5, 7)
-var Feed f5   = newFeed("5m",  0.80, 1.0 / 288,  5, 7)
-var Feed f3   = newFeed("3m",  0.80, 1.0 / 480,  5, 7)
-var Feed f2   = newFeed("2m",  0.75, 1.0 / 720,  5, 7)
-var Feed f1m  = newFeed("1m",  0.75, 1.0 / 1440, 5, 7)
+run(string name, float mult, float dpb, int K, int W, simple string tf, simple bool on) =>
+    simple bool use = on and timeframe.in_seconds(tf) >= timeframe.in_seconds(timeframe.period)
+    simple string rtf = use ? tf : timeframe.period
+    [p_, s_, t_, a_] = request.security(syminfo.tickerid, rtf, engine(name, mult, dpb, K, W, use))
+    [p_, s_, t_, a_, use]
 
-run(fM,  "M",   useH)
-run(fW,  "W",   useH)
-run(fD,  "D",   useH)
-run(f4,  "240", useH)
-run(f1,  "60",  useH or useMd)
-run(f30, "30",  useMd)
-run(f15, "15",  useMd)
-run(f5,  "5",   useL)
-run(f3,  "3",   useL)
-run(f2,  "2",   useL)
-run(f1m, "1",   useL)
+// (name, weight, days per candle, K, reaction window)
+[lpM, lsM, ltM, laM, luM]  = run("M",   1.30, 30.0,       2, 3, "M",   useH)
+[lpW, lsW, ltW, laW, luW]  = run("W",   1.15, 7.0,        3, 4, "W",   useH)
+[lpD, lsD, ltD, laD, luD]  = run("D",   1.00, 1.0,        5, 7, "D",   useH)
+[lp4, ls4, lt4, la4, lu4]  = run("4H",  0.95, 1.0 / 6,    5, 7, "240", useH)
+[lp1, ls1, lt1, la1, lu1]  = run("1H",  0.90, 1.0 / 24,   5, 7, "60",  useH or useMd)
+[lp30, ls30, lt30, la30, lu30] = run("30m", 0.85, 1.0 / 48,   5, 7, "30",  useMd)
+[lp15, ls15, lt15, la15, lu15] = run("15m", 0.85, 1.0 / 96,   5, 7, "15",  useMd)
+[lp5, ls5, lt5, la5, lu5]  = run("5m",  0.80, 1.0 / 288,  5, 7, "5",   useL)
+[lp3, ls3, lt3, la3, lu3]  = run("3m",  0.80, 1.0 / 480,  5, 7, "3",   useL)
+[lp2, ls2, lt2, la2, lu2]  = run("2m",  0.75, 1.0 / 720,  5, 7, "2",   useL)
+[lp1m, ls1m, lt1m, la1m, lu1m] = run("1m",  0.75, 1.0 / 1440, 5, 7, "1",   useL)
+
+// add a timeframe's qualified levels (top X% of that timeframe) to the zone list
+addTf(string nm, bool use, array<float> p_, array<float> s_, array<int> t_, float a_, array<float> qP, array<float> qS, array<string> qF, array<int> qT, array<float> qA) =>
+    if use and not na(p_) and p_.size() > 0
+        float th = s_.percentile_nearest_rank(100 - topPct)
+        for i = 0 to p_.size() - 1
+            if s_.get(i) >= th
+                qP.push(p_.get(i))
+                qS.push(s_.get(i))
+                qF.push(nm)
+                qT.push(t_.get(i))
+                qA.push(ownW ? nz(a_, atrPct) : atrPct)
 
 // ---------------------------------------------------------------- zones (built once per new chart candle on the last bar)
 var array<box>   zBoxes  = array.new<box>()
@@ -317,28 +339,22 @@ if barstate.islast and bar_index != lastBuilt
         lb.delete()
     zBoxes.clear()
     zLabels.clear()
-    // qualification threshold per timeframe
-    map<string, float> thr = map.new<string, float>()
-    for nm in TFS
-        array<float> sc = array.new<float>()
-        if lv.size() > 0
-            for x in lv
-                if x.tf == nm
-                    sc.push(x.score)
-        if sc.size() > 0
-            thr.put(nm, sc.percentile_nearest_rank(100 - topPct))
-    // qualified levels
     array<float>  qP = array.new<float>()
     array<float>  qS = array.new<float>()
     array<string> qF = array.new<string>()
     array<int>    qT = array.new<int>()
-    if lv.size() > 0
-        for x in lv
-            if thr.contains(x.tf) and x.score >= thr.get(x.tf)
-                qP.push(x.price)
-                qS.push(x.score)
-                qF.push(x.tf)
-                qT.push(x.tPiv)
+    array<float>  qA = array.new<float>()
+    addTf("M", luM, lpM, lsM, ltM, laM,  qP, qS, qF, qT, qA)
+    addTf("W", luW, lpW, lsW, ltW, laW,  qP, qS, qF, qT, qA)
+    addTf("D", luD, lpD, lsD, ltD, laD,  qP, qS, qF, qT, qA)
+    addTf("4H", lu4, lp4, ls4, lt4, la4,  qP, qS, qF, qT, qA)
+    addTf("1H", lu1, lp1, ls1, lt1, la1,  qP, qS, qF, qT, qA)
+    addTf("30m", lu30, lp30, ls30, lt30, la30, qP, qS, qF, qT, qA)
+    addTf("15m", lu15, lp15, ls15, lt15, la15, qP, qS, qF, qT, qA)
+    addTf("5m", lu5, lp5, ls5, lt5, la5,  qP, qS, qF, qT, qA)
+    addTf("3m", lu3, lp3, ls3, lt3, la3,  qP, qS, qF, qT, qA)
+    addTf("2m", lu2, lp2, ls2, lt2, la2,  qP, qS, qF, qT, qA)
+    addTf("1m", lu1m, lp1m, ls1m, lt1m, la1m, qP, qS, qF, qT, qA)
     if qP.size() > 0
         array<int> idx = qP.sort_indices(order.ascending)
         array<float>  zLo = array.new<float>()
@@ -346,10 +362,11 @@ if barstate.islast and bar_index != lastBuilt
         array<float>  zBest = array.new<float>()
         array<int>    zT = array.new<int>()
         array<string> zF = array.new<string>()
+        array<float>  zA = array.new<float>()
         for k = 0 to idx.size() - 1
             int ii = idx.get(k)
             float pr = qP.get(ii)
-            float w = atrPct * pr
+            float w = math.max(atrPct, qA.get(ii)) * pr
             int zn = zLo.size()
             string tag = "|" + qF.get(ii) + "|"
             if zn > 0 and pr - zLo.get(zn - 1) <= capW * w and pr - zHi.get(zn - 1) <= mergeW * w
@@ -358,12 +375,14 @@ if barstate.islast and bar_index != lastBuilt
                 zT.set(zn - 1, math.min(zT.get(zn - 1), qT.get(ii)))
                 if not str.contains(zF.get(zn - 1), tag)
                     zF.set(zn - 1, zF.get(zn - 1) + tag)
+                zA.set(zn - 1, math.max(zA.get(zn - 1), qA.get(ii)))
             else
                 zLo.push(pr)
                 zHi.push(pr)
                 zBest.push(qS.get(ii))
                 zT.push(qT.get(ii))
                 zF.push(tag)
+                zA.push(math.max(atrPct, qA.get(ii)))
         // zone value = best level + 0.5 per extra timeframe; rs = rank among all zones (0-10)
         int Z = zLo.size()
         array<float>  zVal = array.new<float>()
@@ -409,7 +428,7 @@ if barstate.islast and bar_index != lastBuilt
         if pick.size() > 0
             for z in pick
                 float rs = zRs.get(z)
-                float w = atrPct * (zLo.get(z) + zHi.get(z)) / 2
+                float w = zA.get(z) * (zLo.get(z) + zHi.get(z)) / 2
                 float top = zHi.get(z)
                 float bot = zLo.get(z)
                 if top - bot < 0.15 * w
