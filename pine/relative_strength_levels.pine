@@ -32,6 +32,7 @@ grpC   = "Display"
 nAbove = input.int(6, "Zones shown above price", minval = 0, maxval = 30, group = grpC)
 nBelow = input.int(6, "Zones shown below price", minval = 0, maxval = 30, group = grpC)
 minRs  = input.float(5.1, "Hide zones under this rs", minval = 0, maxval = 10, step = 0.1, group = grpC)
+showIn = input.bool(true, "Always show the zone price is inside (even under the rs cutoff)", group = grpC)
 cRes   = input.color(#FF1744, "Zone above price", group = grpC)
 cSup   = input.color(#00E676, "Zone below price", group = grpC)
 cIn    = input.color(#FFEA00, "Price inside zone", group = grpC)
@@ -455,9 +456,9 @@ if barstate.islast and bar_index != lastBuilt
         for k = 0 to Z - 1
             int z = near.get(k)
             bool inside = close <= zHi.get(z) and close >= zLo.get(z)
-            if inside
+            if inside and (showIn or zRs.get(z) >= minRs)
                 pick.push(z)
-            else if zRs.get(z) >= minRs
+            else if not inside and zRs.get(z) >= minRs
                 if zLo.get(z) > close and nA < nAbove
                     pick.push(z)
                     nA += 1
