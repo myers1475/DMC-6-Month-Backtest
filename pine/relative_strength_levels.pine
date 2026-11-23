@@ -24,8 +24,8 @@ grpS     = "Scoring"
 topPct   = input.float(25, "Qualify: top % of each timeframe's levels", minval = 1, maxval = 100, group = grpS)
 mergeW   = input.float(0.75, "Merge levels within (x ATR%)", step = 0.05, group = grpS)
 capW     = input.float(1.0, "Max zone width (x ATR%)", step = 0.05, group = grpS)
-maxStore = input.int(150, "Levels stored per timeframe", minval = 20, maxval = 300, group = grpS)
-NMAX     = input.int(500, "Candles kept per timeframe", minval = 100, maxval = 1000, group = grpS)
+maxStore = input.int(100, "Levels stored per timeframe", minval = 20, maxval = 300, group = grpS)
+NMAX     = input.int(400, "Candles kept per timeframe", minval = 100, maxval = 1000, group = grpS)
 ownW     = input.bool(true, "Higher-timeframe zones keep their own width", group = grpS, tooltip = "On: a weekly zone is as wide on a 5m chart as on the weekly. Off: every zone uses the chart timeframe's ATR.")
 
 grpC   = "Display"
@@ -271,33 +271,39 @@ processCands(Feed f, float atrP) =>
 float atrPct = ta.atr(14) / close
 
 // each timeframe runs on its OWN full history inside request.security and hands back its scored levels
-engine(string name, float mult, float dpb, int K, int W, bool on) =>
+engine(string name, float mult, float dpb, int K, int W, bool on, float top) =>
     var Feed f = newFeed(name, mult, dpb, K, W)
-    var array<float> eP = array.new<float>()
-    var array<float> eS = array.new<float>()
-    var array<int>   eT = array.new<int>()
-    var float eA = na
     float aP = ta.atr(14) / close
     if on and barstate.isconfirmed
         pushBar(f, open, high, low, close, nz(volume), time)
         updateLevels(f)
         detectTurns(f)
         processCands(f, aP)
-        eP.clear()
-        eS.clear()
-        eT.clear()
-        if f.lv.size() > 0
-            for x in f.lv
-                eP.push(x.price)
-                eS.push(x.score)
-                eT.push(x.tPiv)
-        eA := aP
-    [eP, eS, eT, eA]
+    // hand back only this timeframe's qualified levels (top %, max 40), and only on its last candles
+    array<float> oP = na
+    array<float> oS = na
+    array<int>   oT = na
+    if on and (barstate.islast or barstate.islastconfirmedhistory) and f.lv.size() > 0
+        oP := array.new<float>()
+        oS := array.new<float>()
+        oT := array.new<int>()
+        array<float> sc = array.new<float>()
+        for x in f.lv
+            sc.push(x.score)
+        float th = sc.percentile_nearest_rank(100 - top)
+        array<int> ord = sc.sort_indices(order.descending)
+        for k = 0 to ord.size() - 1
+            Lvl x = f.lv.get(ord.get(k))
+            if x.score >= th and oP.size() < 40
+                oP.push(x.price)
+                oS.push(x.score)
+                oT.push(x.tPiv)
+    [oP, oS, oT, aP]
 
 run(string name, float mult, float dpb, int K, int W, simple string tf, simple bool on) =>
     simple bool use = on and timeframe.in_seconds(tf) >= timeframe.in_seconds(timeframe.period)
     simple string rtf = use ? tf : timeframe.period
-    [p_, s_, t_, a_] = request.security(syminfo.tickerid, rtf, engine(name, mult, dpb, K, W, use))
+    [p_, s_, t_, a_] = request.security(syminfo.tickerid, rtf, engine(name, mult, dpb, K, W, use, topPct))
     [p_, s_, t_, a_, use]
 
 // (name, weight, days per candle, K, reaction window)
@@ -313,17 +319,51 @@ run(string name, float mult, float dpb, int K, int W, simple string tf, simple b
 [lp2, ls2, lt2, la2, lu2]  = run("2m",  0.75, 1.0 / 720,  5, 7, "2",   useL)
 [lp1m, ls1m, lt1m, la1m, lu1m] = run("1m",  0.75, 1.0 / 1440, 5, 7, "1",   useL)
 
-// add a timeframe's qualified levels (top X% of that timeframe) to the zone list
-addTf(string nm, bool use, array<float> p_, array<float> s_, array<int> t_, float a_, array<float> qP, array<float> qS, array<string> qF, array<int> qT, array<float> qA) =>
-    if use and not na(p_) and p_.size() > 0
-        float th = s_.percentile_nearest_rank(100 - topPct)
-        for i = 0 to p_.size() - 1
-            if s_.get(i) >= th
-                qP.push(p_.get(i))
-                qS.push(s_.get(i))
-                qF.push(nm)
-                qT.push(t_.get(i))
-                qA.push(ownW ? nz(a_, atrPct) : atrPct)
+type Store
+    array<float> p
+    array<float> s
+    array<int> t
+    float a
+
+keep(Store st, array<float> p_, array<float> s_, array<int> t_, float a_) =>
+    if not na(p_)
+        st.p := p_
+        st.s := s_
+        st.t := t_
+        st.a := a_
+
+var Store stM  = Store.new()
+var Store stW  = Store.new()
+var Store stD  = Store.new()
+var Store st4  = Store.new()
+var Store st1  = Store.new()
+var Store st30 = Store.new()
+var Store st15 = Store.new()
+var Store st5  = Store.new()
+var Store st3  = Store.new()
+var Store st2  = Store.new()
+var Store st1m = Store.new()
+keep(stM,  lpM,  lsM,  ltM,  laM)
+keep(stW,  lpW,  lsW,  ltW,  laW)
+keep(stD,  lpD,  lsD,  ltD,  laD)
+keep(st4,  lp4,  ls4,  lt4,  la4)
+keep(st1,  lp1,  ls1,  lt1,  la1)
+keep(st30, lp30, ls30, lt30, la30)
+keep(st15, lp15, ls15, lt15, la15)
+keep(st5,  lp5,  ls5,  lt5,  la5)
+keep(st3,  lp3,  ls3,  lt3,  la3)
+keep(st2,  lp2,  ls2,  lt2,  la2)
+keep(st1m, lp1m, ls1m, lt1m, la1m)
+
+// add a timeframe's qualified levels to the zone list
+addTf(string nm, bool use, Store st, array<float> qP, array<float> qS, array<string> qF, array<int> qT, array<float> qA) =>
+    if use and not na(st.p) and st.p.size() > 0
+        for i = 0 to st.p.size() - 1
+            qP.push(st.p.get(i))
+            qS.push(st.s.get(i))
+            qF.push(nm)
+            qT.push(st.t.get(i))
+            qA.push(ownW ? nz(st.a, atrPct) : atrPct)
 
 // ---------------------------------------------------------------- zones (built once per new chart candle on the last bar)
 var array<box>   zBoxes  = array.new<box>()
@@ -344,17 +384,17 @@ if barstate.islast and bar_index != lastBuilt
     array<string> qF = array.new<string>()
     array<int>    qT = array.new<int>()
     array<float>  qA = array.new<float>()
-    addTf("M", luM, lpM, lsM, ltM, laM,  qP, qS, qF, qT, qA)
-    addTf("W", luW, lpW, lsW, ltW, laW,  qP, qS, qF, qT, qA)
-    addTf("D", luD, lpD, lsD, ltD, laD,  qP, qS, qF, qT, qA)
-    addTf("4H", lu4, lp4, ls4, lt4, la4,  qP, qS, qF, qT, qA)
-    addTf("1H", lu1, lp1, ls1, lt1, la1,  qP, qS, qF, qT, qA)
-    addTf("30m", lu30, lp30, ls30, lt30, la30, qP, qS, qF, qT, qA)
-    addTf("15m", lu15, lp15, ls15, lt15, la15, qP, qS, qF, qT, qA)
-    addTf("5m", lu5, lp5, ls5, lt5, la5,  qP, qS, qF, qT, qA)
-    addTf("3m", lu3, lp3, ls3, lt3, la3,  qP, qS, qF, qT, qA)
-    addTf("2m", lu2, lp2, ls2, lt2, la2,  qP, qS, qF, qT, qA)
-    addTf("1m", lu1m, lp1m, ls1m, lt1m, la1m, qP, qS, qF, qT, qA)
+    addTf("M", luM, stM, qP, qS, qF, qT, qA)
+    addTf("W", luW, stW, qP, qS, qF, qT, qA)
+    addTf("D", luD, stD, qP, qS, qF, qT, qA)
+    addTf("4H", lu4, st4, qP, qS, qF, qT, qA)
+    addTf("1H", lu1, st1, qP, qS, qF, qT, qA)
+    addTf("30m", lu30, st30, qP, qS, qF, qT, qA)
+    addTf("15m", lu15, st15, qP, qS, qF, qT, qA)
+    addTf("5m", lu5, st5, qP, qS, qF, qT, qA)
+    addTf("3m", lu3, st3, qP, qS, qF, qT, qA)
+    addTf("2m", lu2, st2, qP, qS, qF, qT, qA)
+    addTf("1m", lu1m, st1m, qP, qS, qF, qT, qA)
     if qP.size() > 0
         array<int> idx = qP.sort_indices(order.ascending)
         array<float>  zLo = array.new<float>()
