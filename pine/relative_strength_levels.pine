@@ -1,7 +1,7 @@
 //@version=6
 indicator("Relative Strength Levels", shorttitle = "RSL", overlay = true, max_boxes_count = 200, max_labels_count = 200)
 
-// RELATIVE STRENGTH LEVELS (Levels & Linda)
+// RELATIVE STRENGTH LEVELS
 // Every body turn on each timeframe is scored on 7 elements (bodies, not wicks):
 //   0 History   - candles whose body touched the level's zone, before the turn and after it formed (cap ~60 candles)
 //   1 Move in   - best of: move as % of price (trend) or as a share of the prior range height (range)
