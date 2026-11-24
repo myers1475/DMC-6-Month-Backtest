@@ -1,0 +1,57 @@
+//@version=6
+indicator("ATR Room Table", overlay = true)
+
+// === Settings ===
+atrLen  = input.int(14, "ATR Period", minval = 1)
+mult    = input.float(2.0, "Multiplier", minval = 0.1, step = 0.1)
+
+grpTf   = "Timeframes"
+showCh  = input.bool(true,  "Chart timeframe", group = grpTf)
+show4h  = input.bool(true,  "4H",     group = grpTf)
+showD   = input.bool(true,  "Daily",  group = grpTf)
+showW   = input.bool(true,  "Weekly", group = grpTf)
+
+grpSt   = "Style"
+pos     = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group = grpSt)
+txtSize = input.string("Large", "Text size", options = ["Normal", "Large", "Huge"], group = grpSt)
+cBg     = input.color(color.new(#000000, 0), "Background", group = grpSt)
+cHead   = input.color(#FFEA00, "Header text", group = grpSt)
+cTxt    = input.color(#FFFFFF, "Text", group = grpSt)
+cRoom   = input.color(#00E676, "ATR x mult text", group = grpSt)
+
+// === ATR per timeframe (live, updates as the candle moves) ===
+atrCh = ta.atr(atrLen)
+atr4h = request.security(syminfo.tickerid, "240", ta.atr(atrLen))
+atrD  = request.security(syminfo.tickerid, "D",   ta.atr(atrLen))
+atrW  = request.security(syminfo.tickerid, "W",   ta.atr(atrLen))
+
+// === Table ===
+tPos = pos == "Top Right" ? position.top_right : pos == "Top Left" ? position.top_left : pos == "Bottom Right" ? position.bottom_right : position.bottom_left
+sz   = txtSize == "Normal" ? size.normal : txtSize == "Large" ? size.large : size.huge
+var table t = table.new(tPos, 3, 5, bgcolor = cBg, border_width = 1, border_color = color.gray, frame_width = 2, frame_color = color.gray)
+
+fmt(x) => str.tostring(x, format.mintick)
+
+addRow(r, name, a) =>
+    table.cell(t, 0, r, name,           text_color = cTxt,  text_size = sz)
+    table.cell(t, 1, r, fmt(a),         text_color = cTxt,  text_size = sz)
+    table.cell(t, 2, r, fmt(a * mult),  text_color = cRoom, text_size = sz)
+
+if barstate.islast
+    table.clear(t, 0, 0, 2, 4)
+    table.cell(t, 0, 0, "TF",                              text_color = cHead, text_size = sz)
+    table.cell(t, 1, 0, "ATR " + str.tostring(atrLen),     text_color = cHead, text_size = sz)
+    table.cell(t, 2, 0, "x " + str.tostring(mult),         text_color = cHead, text_size = sz)
+    r = 1
+    if showCh
+        addRow(r, "Chart", atrCh)
+        r += 1
+    if show4h
+        addRow(r, "4H", atr4h)
+        r += 1
+    if showD
+        addRow(r, "D", atrD)
+        r += 1
+    if showW
+        addRow(r, "W", atrW)
+        r += 1
