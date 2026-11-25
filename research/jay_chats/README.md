@@ -54,3 +54,12 @@ Broadening (megaphone) pattern on the monthly, linear scale:
 - Matt's drawn path: flush to ~$35K in Q4 2026 -> bounce -> "Black Swan 2027" retest of the lower line -> run through $126K -> ~$182.6K top in Q4 2029.
 - Independent confluence: the lower line (~$35.2K) lands on the weekly bottom line (~$35.8K now, ~$30-34K by Q1). Two different methods, same zone.
 - Timing: the lower line says the touch is due now (Q4 2026); price is ~$59.6K, ~70% above it.
+
+## Exhibit C (Nov 25 2026): BTC monthly head & shoulders, option 1 (descending neckline), Matt's chart
+![Exhibit C](exhibits/exhibit_C_2026-11-25_btc_monthly_hs_option1.png)
+
+- LS Dec 2024 (~$108K), head Oct 2025 ($126.3K), RS Oct 2026 (~$88K); neckline DESCENDING through the Apr 2025 (~$74K) and Feb 2026 (~$60K) lows, extended.
+- Matt's note on chart: "Targets are LOW, BUT the neck is not broken yet."
+- Measured-move levels: 1 = **$52,905**, 0.5 = **$40,741**, 0 (full) = **$28,577**. Neckline extension meets the megaphone lower line (~$35,234) around early 2027.
+- Contrast with the Nov 24 rising-neckline version (neck ~$58-60K under test, target ~$26K): here the neckline slopes down, so the break level is lower (~low/mid $50Ks now) and keeps falling.
+- Confluence with the other exhibits: $52.9K ~ weekly H&S $51.8K (Exhibit A); $40.7K ~ symmetry $40.5K / 2023-24 base $42.6K (Exhibit A); $28.6K ~ low end of bottom line (~$30K by Q1) / monthly H&S rising-neck target ~$26K.
