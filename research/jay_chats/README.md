@@ -23,3 +23,8 @@ to see how things turn out. Raw transcripts sit next to this file, one per date.
   - Waiting for the November monthly close vs the neckline before reworking his buy ladder.
 
 **Check later:** did $58K break and hold? Did it reach $48-52K? The bottom line ($30-35K)? The H&S target (~$26K)? Was 58 a bear trap?
+
+**Matt's follow-up note (Nov 25):** even if Jay argues a monthly green dot, the monthly red counter-dot is real too
+(not officially confirmed until the monthly close, ~5 days). Matt won't start going long before the November monthly close.
+History: in the 2025 run-up Jay shorted from the first touch of ~$90K on overbought technicals and held the short for months
+while BTC ran to $126K - the same oscillator-extreme lens, now pointed the other way. Part of why Matt stepped back from the group.
