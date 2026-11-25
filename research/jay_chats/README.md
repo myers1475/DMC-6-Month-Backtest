@@ -81,3 +81,12 @@ Broadening (megaphone) pattern on the monthly, linear scale:
 - **Monthly close back above ~$60K:** the range (E) holds and the rising neckline (D) holds; range targets ~$71.5K mid, ~$83-88K top.
 - **Monthly close below ~$58-60K:** H&S option 2 (D) triggers -> $26.3K target; first stops at $51.8-52.9K (A, C).
 - **Loss of ~$54-55K:** the range floor (E) and the falling neckline of H&S option 1 (C) sit in the same zone; losing it confirms both bear options -> $40-43K (A, C 0.5), then $28-35K (bottom line, megaphone B, C full).
+
+## Exhibit F (Nov 25 2026): realized and balanced price, "Perspective Facts", Matt's chart
+![Exhibit F](exhibits/exhibit_F_2026-11-25_btc_realized_balanced.png)
+
+- On-chain levels (Nov 24-25 2026): **realized price ~$53,200** (Glassnode; the chart label reads 52,200), **balanced price ~$38,750** (Coinglass, Nov 20, falling ~2%/month).
+- Every bear-market bottom (2015, 2018, COVID 2020, 2022) went below realized price (0.69x-0.88x at the lows; up to 301 days below) and reached balanced price.
+- Why realized is the more reliable of the two: natural definition (aggregate cost basis) + a mechanism (break-even psychology; capitulation re-stamps coins low and pulls the line toward price). Balanced price was built after past bottoms to fit them (hindsight risk).
+- ETF/custodial holdings ("measurement drift") make BOTH lines less precise going forward (balanced = realized minus transferred price), so treat realized as a zone, not a tick.
+- Fit with the ladder: realized ~$53K = the $51.8-52.9K tier / $54-55K line in the sand; balanced ~$38.75K sits between the $40-43K tier and the $30-35K zone.
