@@ -44,3 +44,13 @@ Target ladder below (for the post-monthly-close buy-ladder rework):
 | ~$40.5-42.6K | Symmetric measured move + 2023-24 base |
 | ~$30-35K | Weekly "bottom line" (~0.47 x 52w SMA), touched every bottoming year |
 | ~$26K | Monthly H&S measured move |
+
+## Exhibit B (Nov 25 2026): BTC monthly "timeline megaphone", Matt's chart
+![Exhibit B](exhibits/exhibit_B_2026-11-25_btc_monthly_megaphone.png)
+
+Broadening (megaphone) pattern on the monthly, linear scale:
+- Upper line through the cycle tops: Dec 2017 ($19,892), Nov 2021 ($69,000), Oct 2025 ($126,296) -> **Q4 2029 at ~$182,630**.
+- Lower line through the cycle lows: Dec 2018 ($3,129), COVID 2020, Nov 2022 ($15,460) -> **Q4 2026 at ~$35,234** (horizontal ~$34,588); Q4 2030 next touch.
+- Matt's drawn path: flush to ~$35K in Q4 2026 -> bounce -> "Black Swan 2027" retest of the lower line -> run through $126K -> ~$182.6K top in Q4 2029.
+- Independent confluence: the lower line (~$35.2K) lands on the weekly bottom line (~$35.8K now, ~$30-34K by Q1). Two different methods, same zone.
+- Timing: the lower line says the touch is due now (Q4 2026); price is ~$59.6K, ~70% above it.
