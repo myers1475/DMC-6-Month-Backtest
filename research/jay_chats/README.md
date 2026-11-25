@@ -63,3 +63,21 @@ Broadening (megaphone) pattern on the monthly, linear scale:
 - Measured-move levels: 1 = **$52,905**, 0.5 = **$40,741**, 0 (full) = **$28,577**. Neckline extension meets the megaphone lower line (~$35,234) around early 2027.
 - Contrast with the Nov 24 rising-neckline version (neck ~$58-60K under test, target ~$26K): here the neckline slopes down, so the break level is lower (~low/mid $50Ks now) and keeps falling.
 - Confluence with the other exhibits: $52.9K ~ weekly H&S $51.8K (Exhibit A); $40.7K ~ symmetry $40.5K / 2023-24 base $42.6K (Exhibit A); $28.6K ~ low end of bottom line (~$30K by Q1) / monthly H&S rising-neck target ~$26K.
+
+## Exhibit D (Nov 25 2026): BTC monthly head & shoulders, option 2 (rising neckline), Matt's chart
+![Exhibit D](exhibits/exhibit_D_2026-11-25_btc_monthly_hs_option2.png)
+
+- LS Mar 2024 (~$73K), head Oct 2025 ($126.3K), RS Oct 2026 (~$89K); neckline RISING from the Aug 2024 low (~$49K) through the mid-2026 lows (~$58K). Price is on it now (~$60K; Nov wick $55,106).
+- Measured move -55.40% -> **$26,283.86**. Same pattern as the Nov 24 chart; the 2021 version measured to within 2% of the 2022 low.
+- Trigger: a monthly close below the neckline (~$58-60K).
+
+## Exhibit E (Nov 25 2026): BTC monthly "just a range" (Fibonacci range), Matt's chart
+![Exhibit E](exhibits/exhibit_E_2026-11-25_btc_monthly_range.png)
+
+- The neutral read: price has ranged since Feb 2026. Levels (approx.): top ~$88.5K (red), ~$83K (white), mid ~$71.5K (grey), range low ~$60K (white, monthly closes), floor ~$54.5K (green, wicks; Nov low $55,106).
+- Price sits at the bottom of the range. In range terms, that's the buy side, not a breakdown, until the floor goes.
+
+### How the five exhibits fit together (decision points at the Nov monthly close)
+- **Monthly close back above ~$60K:** the range (E) holds and the rising neckline (D) holds; range targets ~$71.5K mid, ~$83-88K top.
+- **Monthly close below ~$58-60K:** H&S option 2 (D) triggers -> $26.3K target; first stops at $51.8-52.9K (A, C).
+- **Loss of ~$54-55K:** the range floor (E) and the falling neckline of H&S option 1 (C) sit in the same zone; losing it confirms both bear options -> $40-43K (A, C 0.5), then $28-35K (bottom line, megaphone B, C full).
