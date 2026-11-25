@@ -111,3 +111,17 @@ Baseline weights with both H&S necklines unbroken (H&S targets conditional): cas
 **C. Forceful break, wide-bodied close below ~$54K.** Option 2 confirmed, range floor gone, realized tagged/undercut, option 1 neck at hand. Flush legs historically 3-8 weeks: $51.8-53K fast, then $40-43K; megaphone ~$35K, bottom line ~$31-33K, H&S $28.6K/$26.3K active. Weights: 1 ~50%, 3 ~35%, 2 ~15%, 4 off. Plan: middle tiers fill fast; no leverage until the base (2022 took ~6 months break-to-low).
 
 Common thread: realized price is the unfinished business; A/B/C mostly differ in WHEN it's tagged (2027 / December / immediately).
+
+## Exhibit G (Nov 25 2026): CVDD meets realized price (Alphractal, via @joao_wedson / @arch_physicist on X)
+![Exhibit G1](exhibits/exhibit_G1_2026-11-25_realized_vs_cvdd.png)
+![Exhibit G2](exhibits/exhibit_G2_2026-11-25_cost_basis_levels.png)
+
+- Realized price $53,104 vs CVDD ~$52,910: ~$194 apart, the first convergence ever. Past bottoms formed between them (realized above, CVDD as the floor; the 2022 low sat on CVDD).
+- Cost-basis panel (Nov 24, BTC close $60,202): active realized $84,520; true market mean $76,564; STH realized $72,609 (crossed below Nov 6); realized $53,104; LTH realized $48,255; investor price $48,098; balanced $37,872.
+- Why they meet: CVDD is cumulative (mostly only rises; old coins spent at high 2024-25 prices pushed it up); realized can fall (coins sold at a loss re-stamp lower). Partly mechanical.
+- Conflict between two perfect records: every bottom went below realized (0.69-0.88x), and price never stayed meaningfully below CVDD. With the lines together, one record must break: bottom ~$50-53K (CVDD holds, shallowest-ever realized undercut) OR the first break of CVDD toward $35-43K.
+- CVDD carries a calibration constant fit to past bottoms (same hindsight caution as balanced price), but $52.9K stacks with realized, weekly H&S $51.8K and H&S option 1 $52.9K.
+
+**Updated weights (Nov 25, after Exhibit G):** case 1 ~35%, case 2 ~35%, case 3 ~15%, case 4 ~15%.
+Scenarios: A (close above neck) 1 ~25 / 2 ~40 / 3 ~10 / 4 ~25; B (shallow break) 1 ~35 / 2 ~40 / 3 ~15 / 4 ~10; C (forceful break <$54K) 1 ~45 / 2 ~20 / 3 ~35 / 4 off.
+Ladder note: only $2,750 of $12,363 BTC money sits in the $50-53K tier (rungs 1-2).
