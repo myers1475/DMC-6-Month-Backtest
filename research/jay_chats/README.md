@@ -89,4 +89,14 @@ Broadening (megaphone) pattern on the monthly, linear scale:
 - Every bear-market bottom (2015, 2018, COVID 2020, 2022) went below realized price (0.69x-0.88x at the lows; up to 301 days below) and reached balanced price.
 - Why realized is the more reliable of the two: natural definition (aggregate cost basis) + a mechanism (break-even psychology; capitulation re-stamps coins low and pulls the line toward price). Balanced price was built after past bottoms to fit them (hindsight risk).
 - ETF/custodial holdings ("measurement drift") make BOTH lines less precise going forward (balanced = realized minus transferred price), so treat realized as a zone, not a tick.
+- Realized-price multiples at past lows mapped to today's $53.2K: Mar 2020 0.88x ~$46.8K, Jun 2022 0.84x ~$44.7K, Nov 2022 0.78x ~$41.5K, Dec 2018 0.69x ~$36.7K (realized usually sags during capitulation, so these could land slightly lower).
 - Fit with the ladder: realized ~$53K = the $51.8-52.9K tier / $54-55K line in the sand; balanced ~$38.75K sits between the $40-43K tier and the $30-35K zone.
+
+## Bottoming cases, ranked (Nov 25 2026, Claude's synthesis of Exhibits A-F + on-chain)
+1. **$35-43K, centered ~$38-40K (~40%)**: realized x0.69-0.78 ($36.7-41.5K), balanced $38.75K, symmetry $40.5K, 2023-24 base $42.6K, H&S opt 1 0.5 $40.7K, megaphone ~$35.2K, Cowen late-$30Ks.
+2. **$44-53K shallow (~30%)**: realized x0.84-0.88 ($44.7-46.8K), LTH cost basis $48.4K, weekly H&S $51.8K, H&S opt 1 $52.9K, Jay's 48-52K. Likeliest first stop.
+3. **$26-33K deep (~20%)**: bottom line ~$31-33K by spring, H&S opt 1 full $28.6K, opt 2 $26.3K (2021 twin hit within 2%).
+4. **Already in at $55.1K (~10%)**: range (E) holds; would break the record of every bottom going below realized price.
+Timing: flush Q4 2026-Q1 2027, slow base + likely 2027 retest, rebound ~Mar-Jun 2027.
+Updates: Nov close >$60K -> weight to 2 and 4; <$58K -> 1 and 3; losing $54-55K removes 4.
+Percentages are judgment, not calculation.
