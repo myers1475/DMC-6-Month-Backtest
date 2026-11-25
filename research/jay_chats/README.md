@@ -127,3 +127,12 @@ Scenarios: A (close above neck) 1 ~25 / 2 ~40 / 3 ~10 / 4 ~25; B (shallow break)
 Ladder note: only $2,750 of $12,363 BTC money sits in the $50-53K tier (rungs 1-2).
 
 **Check later (added Nov 25):** regime change / secular bear test - a monthly close below CVDD (~$53K), then below balanced (~$38K), no reclaim by 2028, megaphone lower line failing = confirmed. Raised by an X commenter ("lots of firsts... welcome to the new norm"); his "first failed halving rally with no new ATH" was wrong (2024 halving -> $126K ATH Oct 2025). This view expects the opposite: shallower swings, higher floor.
+
+## Exhibit H (Nov 25 2026): Plan C "Bitcoin Refraction Model" + "every model will break" quote-tweet
+![Exhibit H](exhibits/exhibit_H_2026-11-25_refraction_model.png)
+
+- Power-law-style percentile model: fair value $98,511; Nov 24 close $59,791 = 1st percentile; 0.1th percentile floor $55,185 (Nov wick $55,106 basically tagged it); 5-year projection $215.7K (lowest band) to $591K.
+- Quote-tweet: models built in one environment break when it changes (same caution as balanced/CVDD calibration and ETF drift).
+- Model floors stacked under price: classic power-law floor $67.7K (broken since Nov 15); refraction 0.1th pct $55.2K (tagged); realized $53.1K; CVDD $52.9K.
+- $52-55K = where a family of historical models is tested at once. Hold -> models survive, supports case 2 (~$50-53K). Monthly close well below -> several break together (the commenter's thesis), deeper cases 1/3 in play.
+- Plan C's $216K+ 2031 floor sits above Matt's own $175-200K 2029-top expectation: optimistic end, like Lilly.
