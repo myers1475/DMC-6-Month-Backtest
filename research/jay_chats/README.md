@@ -100,3 +100,14 @@ Broadening (megaphone) pattern on the monthly, linear scale:
 Timing: flush Q4 2026-Q1 2027, slow base + likely 2027 retest, rebound ~Mar-Jun 2027.
 Updates: Nov close >$60K -> weight to 2 and 4; <$58K -> 1 and 3; losing $54-55K removes 4.
 Percentages are judgment, not calculation.
+
+## November-close scenarios (Nov 25 2026)
+Baseline weights with both H&S necklines unbroken (H&S targets conditional): case 1 ~40%, case 2 ~30%, case 3 ~15%, case 4 ~15%.
+
+**A. Close above the neckline (~$58-60K+).** Both necklines + range floor hold; a data point for E, not a verdict (December can still break). Matt's add: closing back above after trading below (Nov wick $55.1K) = relative strength / buyers defending; not a pump, but argues the eventual dump is shallower. Two straight closes above (Nov + Dec), even with wicks below, would make that case clearly. Realized ($53.2K) still untagged -> likely a delay, not a bottom (undercut slides into 2027). Weights: 1 ~30%, 2 ~35%, 3 ~10%, 4 ~25%. Plan: ladder as is, no leverage; watch a reclaim of the range mid (~$71.5K).
+
+**B. Shallow break, close ~$55-58K.** Option 2 neck technically broken, but above the range floor and realized; not a Brandt wide-bodied breakout; bear-trap setup. December reclaim >$60K = failed breakdown (case 4 up); follow-through -> realized $53.2K / weekly H&S $51.8K. Weights: 1 ~40%, 2 ~35%, 3 ~15%, 4 ~10%. Plan: top rungs ($48-53K) in play; wait for December to confirm.
+
+**C. Forceful break, wide-bodied close below ~$54K.** Option 2 confirmed, range floor gone, realized tagged/undercut, option 1 neck at hand. Flush legs historically 3-8 weeks: $51.8-53K fast, then $40-43K; megaphone ~$35K, bottom line ~$31-33K, H&S $28.6K/$26.3K active. Weights: 1 ~50%, 3 ~35%, 2 ~15%, 4 off. Plan: middle tiers fill fast; no leverage until the base (2022 took ~6 months break-to-low).
+
+Common thread: realized price is the unfinished business; A/B/C mostly differ in WHEN it's tagged (2027 / December / immediately).
