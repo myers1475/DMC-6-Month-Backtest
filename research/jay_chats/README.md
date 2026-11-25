@@ -136,3 +136,16 @@ Ladder note: only $2,750 of $12,363 BTC money sits in the $50-53K tier (rungs 1-
 - Model floors stacked under price: classic power-law floor $67.7K (broken since Nov 15); refraction 0.1th pct $55.2K (tagged); realized $53.1K; CVDD $52.9K.
 - $52-55K = where a family of historical models is tested at once. Hold -> models survive, supports case 2 (~$50-53K). Monthly close well below -> several break together (the commenter's thesis), deeper cases 1/3 in play.
 - Plan C's $216K+ 2031 floor sits above Matt's own $175-200K 2029-top expectation: optimistic end, like Lilly.
+
+## Exhibit I (Nov 25 2026): Ben Cowen, "The Weight of History" (video, summarized)
+- A lower low in Q4 of a midterm year is normal; models now breaking were mostly over-optimistic/overfitted. The low could be in (odds up), but calling it goes against history.
+- Realized price (~$53K): BTC went below it in every bear (2014-15; Nov 2018 -> Apr 2019; summer 2022 -> 2023). Balanced price next only if realized breaks.
+- Counter to the ETF "measurement drift" caution: the "coins don't move" argument applied in 2014/2018/2022 too, and price still went below realized each time.
+- Metals bottom first: gold Aug 2018 vs BTC Dec 2018; gold Sep 2022 vs BTC Nov 2022; gold Oct 2008 vs S&P Mar 2009. Gold/silver are capitulating now -> BTC low likely still ahead.
+- No whale accumulation yet: whale activity score spiked ~0.8-0.9 at the 2014/2018/2022 lows; 2026 peaks ~0.4-0.5, now ~0.1. On-chain risk 0.165, past bottoms lower.
+- Rate-hike analogs (after first hike; after a Sept midterm-year hike): BTC usually keeps selling off from here. Window of weakness 4-8 more weeks, into early 2027; if 2027 arrives with no new low, more open to the low being in.
+- His strategy: DCA in the second half of the midterm year + buy risk levels (= Ladder A in spirit).
+
+**Updated weights (after Exhibit I):** case 1 ~40%, case 2 ~35%, case 3 ~15%, case 4 ~10%.
+Scenarios: A 1 ~30 / 2 ~40 / 3 ~10 / 4 ~20; B 1 ~40 / 2 ~40 / 3 ~15 / 4 ~5; C 1 ~50 / 2 ~15 / 3 ~35 / 4 off.
+**Check later:** gold puts in its low (BTC's should follow); whale activity score spikes toward ~0.8.
