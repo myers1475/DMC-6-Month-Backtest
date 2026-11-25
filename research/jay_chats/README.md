@@ -125,3 +125,5 @@ Common thread: realized price is the unfinished business; A/B/C mostly differ in
 **Updated weights (Nov 25, after Exhibit G):** case 1 ~35%, case 2 ~35%, case 3 ~15%, case 4 ~15%.
 Scenarios: A (close above neck) 1 ~25 / 2 ~40 / 3 ~10 / 4 ~25; B (shallow break) 1 ~35 / 2 ~40 / 3 ~15 / 4 ~10; C (forceful break <$54K) 1 ~45 / 2 ~20 / 3 ~35 / 4 off.
 Ladder note: only $2,750 of $12,363 BTC money sits in the $50-53K tier (rungs 1-2).
+
+**Check later (added Nov 25):** regime change / secular bear test - a monthly close below CVDD (~$53K), then below balanced (~$38K), no reclaim by 2028, megaphone lower line failing = confirmed. Raised by an X commenter ("lots of firsts... welcome to the new norm"); his "first failed halving rally with no new ATH" was wrong (2024 halving -> $126K ATH Oct 2025). This view expects the opposite: shallower swings, higher floor.
