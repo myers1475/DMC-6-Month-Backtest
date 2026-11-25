@@ -28,3 +28,19 @@ to see how things turn out. Raw transcripts sit next to this file, one per date.
 (not officially confirmed until the monthly close, ~5 days). Matt won't start going long before the November monthly close.
 History: in the 2025 run-up Jay shorted from the first touch of ~$90K on overbought technicals and held the short for months
 while BTC ran to $126K - the same oscillator-extreme lens, now pointed the other way. Part of why Matt stepped back from the group.
+
+## Exhibit A (Nov 25 2026): BTC weekly symmetry, Matt's chart
+![Exhibit A](exhibits/exhibit_A_2026-11-25_btc_weekly_symmetry.png)
+
+Matt's case that ~$58K is not the bottom:
+- Weekly H&S (LS Dec 2024, head Oct 2025, RS Dec 2025): measured -37.36% -> **$51,806**, never reached (low so far ~57K). This is the same zone as Jay's 48-52K trapdoor.
+- Two rounded tops in 2026 (purple) mirror the two in 2024 (blue), both on the same ~$59.3K shelf (floor of the 2024 range, tested again now).
+- Second hump fell -31.89% to the shelf; the same -31.62% below the shelf -> **$40,463**, on top of the late-2023/early-2024 base at **$42,635**.
+
+Target ladder below (for the post-monthly-close buy-ladder rework):
+| Level | Source |
+|---|---|
+| ~$51.8K | Weekly H&S unfinished target (Jay's 48-52K) |
+| ~$40.5-42.6K | Symmetric measured move + 2023-24 base |
+| ~$30-35K | Weekly "bottom line" (~0.47 x 52w SMA), touched every bottoming year |
+| ~$26K | Monthly H&S measured move |
