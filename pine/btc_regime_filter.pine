@@ -46,72 +46,36 @@ lblOff     = input.int(6, "Label offset (bars right of last bar)", minval=0, max
 lblSize    = input.string(size.normal, "Label size", options=[size.small, size.normal, size.large], group=grpS)
 
 // group masters applied to each line
-show200w := showCore and show200w
-show2y   := showCore and show2y
-show1y   := showCore and show1y
-show20w  := showBull and show20w
-show21w  := showBull and show21w
-fillBmsb := showBull and fillBmsb
-show20d  := showBearG and show20d
-show50d  := showBearG and show50d
-showVw   := showBearG and showVw
-fillBear := showBearG and fillBear
-
-// ───────── Cross markers ─────────
-grpX = "Cross markers"
-mkGD   = input.bool(true,  "Golden / death cross (50D vs 200D SMA)", group=grpX)
-mkYY   = input.bool(true,  "1-yr vs 2-yr SMA cross", group=grpX)
-mkReg  = input.bool(true,  "Regime changes (Bull / Transition / Bear)", group=grpX)
-mkVw   = input.bool(false, "Daily close reclaims / loses 200D VWAP", group=grpX)
-mkBm   = input.bool(false, "Daily close reclaims / loses BMSB", group=grpX)
-mkUp   = input.color(#00E676, "Bullish marker", inline="mk", group=grpX)
-mkDn   = input.color(#FF1744, "Bearish marker", inline="mk", group=grpX)
-
-// ───────── Regime state ─────────
-grpT = "Regime state"
-showTbl    = input.bool(true, "Show table", group=grpT)
-tblPos     = input.string(position.bottom_left, "Table position", options=[position.top_right, position.middle_right, position.bottom_right, position.top_left, position.middle_left, position.bottom_left], group=grpT)
-tblSize    = input.string(size.normal, "Table text size", options=[size.small, size.normal, size.large], group=grpT)
-showTint   = input.bool(true, "Background tint by regime", group=grpT)
-tintTransp = input.int(90, "Tint transparency", minval=50, maxval=100, group=grpT)
-colBull    = input.color(#00E676, "Bull",       inline="r", group=grpT)
-colTran    = input.color(#FFD600, "Transition", inline="r", group=grpT)
-colBear    = input.color(#FF1744, "Bear",       inline="r", group=grpT)
-
-// ───────── Data (same values on any chart timeframe) ─────────
-// Smooth mode: weekly MAs computed on daily bars at 7x length (BTC trades 7 days/week),
-// so they curve with price instead of stair-stepping once a week.
-smooth = input.bool(true, "Smooth weekly lines (daily-equivalent lengths)", group=grpS)
-[sw200, sw104, sw52, sw20, sw21] = request.security(syminfo.tickerid, "D", [ta.sma(close, 1400), ta.sma(close, 728), ta.sma(close, 364), ta.sma(close, 140), ta.ema(close, 147)])
-[ww200, ww104, ww52, ww20, ww21] = request.security(syminfo.tickerid, "W", [ta.sma(close, 200), ta.sma(close, 104), ta.sma(close, 52), ta.sma(close, 20), ta.ema(close, 21)])
-w200 = smooth ? sw200 : ww200
-w104 = smooth ? sw104 : ww104
-w52  = smooth ? sw52  : ww52
-w20  = smooth ? sw20  : ww20
-w21  = smooth ? sw21  : ww21
-[d20, d50, d200, dvw, dc]   = request.security(syminfo.tickerid, "D", [ta.sma(close, 20), ta.sma(close, 50), ta.sma(close, 200), math.sum(hlc3 * volume, 200) / math.sum(volume, 200), close])
-// gaps 5 days ago, for the cross-watch rows (pace of convergence)
-[gGD5, gYY5] = request.security(syminfo.tickerid, "D", [(ta.sma(close, 50) - ta.sma(close, 200))[5], (ta.sma(close, 364) - ta.sma(close, 728))[5]])
+v200w = showCore and show200w
+v2y   = showCore and show2y
+v1y   = showCore and show1y
+v20w  = showBull and show20w
+v21w  = showBull and show21w
+vBmsb = showBull and fillBmsb
+v20d  = showBearG and show20d
+v50d  = showBearG and show50d
+vVw   = showBearG and showVw
+vBear = showBearG and fillBear
 
 // ───────── Plots ─────────
-plot(w200, "200W SMA",        show200w ? col200w : na, lw)
-plot(w104, "2-yr SMA",        show2y   ? col2y   : na, lw)
-plot(w52,  "1-yr SMA",        show1y   ? col1y   : na, lw)
-plot(d200, "200D SMA",        show200d ? col200d : na, lw)
-plot(w20, "BMSB 20W SMA", show20w ? col20w : na, lw)
-plot(w21, "BMSB 21W EMA", show21w ? col21w : na, lw)
-plot(d20, "20D SMA",      show20d ? col20d : na, lw)
-plot(d50, "50D SMA",      show50d ? col50d : na, lw)
-plot(dvw,  "200D VWAP",       showVw   ? colVw   : na, lw)
+plot(w200, "200W SMA", col200w, lw, display = v200w ? display.all : display.none)
+plot(w104, "2-yr SMA", col2y, lw, display = v2y ? display.all : display.none)
+plot(w52, "1-yr SMA", col1y, lw, display = v1y ? display.all : display.none)
+plot(d200, "200D SMA", col200d, lw, display = show200d ? display.all : display.none)
+plot(w20, "BMSB 20W SMA", col20w, lw, display = v20w ? display.all : display.none)
+plot(w21, "BMSB 21W EMA", col21w, lw, display = v21w ? display.all : display.none)
+plot(d20, "20D SMA", col20d, lw, display = v20d ? display.all : display.none)
+plot(d50, "50D SMA", col50d, lw, display = v50d ? display.all : display.none)
+plot(dvw, "200D VWAP", colVw, lw, display = vVw ? display.all : display.none)
 // Clouds: shade from the lowest to the highest line in each band
 pBullHi = plot(math.max(w20, w21), "BMSB cloud top", display=display.none)
 pBullLo = plot(math.min(w20, w21), "BMSB cloud bottom", display=display.none)
-fill(pBullHi, pBullLo, fillBmsb ? colBmsbF : na, "BMSB cloud")
+fill(pBullHi, pBullLo, colBmsbF, "BMSB cloud", display = vBmsb ? display.all : display.none)
 bearHi = na(dvw) ? math.max(d20, d50) : math.max(d20, d50, dvw)
 bearLo = na(dvw) ? math.min(d20, d50) : math.min(d20, d50, dvw)
 pBearHi = plot(bearHi, "Bear cloud top", display=display.none)
 pBearLo = plot(bearLo, "Bear cloud bottom", display=display.none)
-fill(pBearHi, pBearLo, fillBear ? colBearF : na, "Bear resistance cloud")
+fill(pBearHi, pBearLo, colBearF, "Bear resistance cloud", display = vBear ? display.all : display.none)
 
 // ───────── Regime ─────────
 // Bull: daily close above the whole BMSB AND above the 200D VWAP
@@ -180,12 +144,8 @@ phCol  = f_pCol(phase)
 phNew  = phase != phase[1]
 
 plotshape(showStrip and not na(phase), "Cycle strip", shape.square, location.top, phCol, size=size.tiny)
-plotchar(showStrip and phNew and phase == 0, "Strip: Halving chop", "▼", location.top, cChop, text="Halving chop", textcolor=cChop, size=size.tiny)
-plotchar(showStrip and phNew and phase == 1, "Strip: Expansion",    "▼", location.top, cExp,  text="Expansion",    textcolor=cExp,  size=size.tiny)
-plotchar(showStrip and phNew and phase == 2, "Strip: Top zone",     "▼", location.top, cTop,  text="Top zone",     textcolor=cTop,  size=size.tiny)
-plotchar(showStrip and phNew and phase == 3, "Strip: Bear",         "▼", location.top, cBear, text="Bear",         textcolor=cBear, size=size.tiny)
-plotchar(showStrip and phNew and phase == 4, "Strip: Bottom zone",  "▼", location.top, cBot,  text="Bottom zone",  textcolor=cBot,  size=size.tiny)
-plotchar(showStrip and phNew and phase == 5, "Strip: Pre-halving",  "▼", location.top, cPre,  text="Pre-halving",  textcolor=cPre,  size=size.tiny)
+if showStrip and phNew and not na(phase)
+    label.new(bar_index, high, f_pName(phase), yloc=yloc.abovebar, style=label.style_label_down, color=color.new(color.black, 100), textcolor=phCol, size=size.tiny)
 
 // Interpretive read: cycle phase x regime (from the 2016-2026 chop study)
 f_read(int p, int r) =>
@@ -248,15 +208,15 @@ if barstate.islast
         label.delete(l)
     array.clear(lbls)
     if showLbl
-        f_add(show200w, w200, "200W SMA",     col200w)
-        f_add(show2y,   w104, "2-yr SMA",     col2y)
-        f_add(show1y,   w52,  "1-yr SMA",     col1y)
+        f_add(v200w, w200, "200W SMA",     col200w)
+        f_add(v2y,   w104, "2-yr SMA",     col2y)
+        f_add(v1y,   w52,  "1-yr SMA",     col1y)
         f_add(show200d, d200, "200D SMA",     col200d)
-        f_add(show20w,  w20,  "BMSB 20W SMA", col20w)
-        f_add(show21w,  w21,  "BMSB 21W EMA", col21w)
-        f_add(show20d,  d20,  "20D SMA",      col20d)
-        f_add(show50d,  d50,  "50D SMA",      col50d)
-        f_add(showVw,   dvw,  "200D VWAP",    colVw)
+        f_add(v20w,  w20,  "BMSB 20W SMA", col20w)
+        f_add(v21w,  w21,  "BMSB 21W EMA", col21w)
+        f_add(v20d,  d20,  "20D SMA",      col20d)
+        f_add(v50d,  d50,  "50D SMA",      col50d)
+        f_add(vVw,   dvw,  "200D VWAP",    colVw)
 
 // ───────── Table ─────────
 var table tbl = table.new(tblPos, 4, 15, border_width=1)
