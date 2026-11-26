@@ -149,3 +149,12 @@ Ladder note: only $2,750 of $12,363 BTC money sits in the $50-53K tier (rungs 1-
 **Updated weights (after Exhibit I):** case 1 ~40%, case 2 ~35%, case 3 ~15%, case 4 ~10%.
 Scenarios: A 1 ~30 / 2 ~40 / 3 ~10 / 4 ~20; B 1 ~40 / 2 ~40 / 3 ~15 / 4 ~5; C 1 ~50 / 2 ~15 / 3 ~35 / 4 off.
 **Check later:** gold puts in its low (BTC's should follow); whale activity score spikes toward ~0.8.
+
+## Exhibit E, part 2 (Nov 25 2026): the 2026 range rhythm (daily), Matt's chart
+![Exhibit E2](exhibits/exhibit_E2_2026-11-25_btc_daily_range_rhythm.png)
+
+- Range: floor ~$60K, mid ~$71.5K, upper ~$83K, top ~$88.5K; 0.25 deviation limit ~$54.3K (Nov wick $55.1K stayed inside -> range intact by Matt's rule).
+- Alternating boxes: low $60-76K Feb-Apr (64d); high $76-83K Apr-Jun (49d); low $57-68K Jun-Aug (75d); high $80-88K Aug-Nov (76d).
+- Moves between boxes ~17% each: -16.95% (Jun), +16.57% (Aug), -17.02% (Nov). Top to deviation low -37.03%.
+- New low box started mid-Nov at the floor; at 49-76 days it runs to ~early Jan - early Feb 2027 (matches the Q1 window / Cowen's 4-8 weeks).
+- Next ~17% move decides it: up -> ~$70K (range mid, Exhibit E holds); down -> ~$50K (breaks the deviation limit, lands on realized/CVDD $50-53K = case 2).
