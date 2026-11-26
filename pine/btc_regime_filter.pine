@@ -57,6 +57,42 @@ v50d  = showBearG and show50d
 vVw   = showBearG and showVw
 vBear = showBearG and fillBear
 
+// ───────── Cross markers ─────────
+grpX = "Cross markers"
+mkGD   = input.bool(true,  "Golden / death cross (50D vs 200D SMA)", group=grpX)
+mkYY   = input.bool(true,  "1-yr vs 2-yr SMA cross", group=grpX)
+mkReg  = input.bool(true,  "Regime changes (Bull / Transition / Bear)", group=grpX)
+mkVw   = input.bool(false, "Daily close reclaims / loses 200D VWAP", group=grpX)
+mkBm   = input.bool(false, "Daily close reclaims / loses BMSB", group=grpX)
+mkUp   = input.color(#00E676, "Bullish marker", inline="mk", group=grpX)
+mkDn   = input.color(#FF1744, "Bearish marker", inline="mk", group=grpX)
+
+// ───────── Regime state ─────────
+grpT = "Regime state"
+showTbl    = input.bool(true, "Show table", group=grpT)
+tblPos     = input.string(position.bottom_left, "Table position", options=[position.top_right, position.middle_right, position.bottom_right, position.top_left, position.middle_left, position.bottom_left], group=grpT)
+tblSize    = input.string(size.normal, "Table text size", options=[size.small, size.normal, size.large], group=grpT)
+showTint   = input.bool(true, "Background tint by regime", group=grpT)
+tintTransp = input.int(90, "Tint transparency", minval=50, maxval=100, group=grpT)
+colBull    = input.color(#00E676, "Bull",       inline="r", group=grpT)
+colTran    = input.color(#FFD600, "Transition", inline="r", group=grpT)
+colBear    = input.color(#FF1744, "Bear",       inline="r", group=grpT)
+
+// ───────── Data (same values on any chart timeframe) ─────────
+// Smooth mode: weekly MAs computed on daily bars at 7x length (BTC trades 7 days/week),
+// so they curve with price instead of stair-stepping once a week.
+smooth = input.bool(true, "Smooth weekly lines (daily-equivalent lengths)", group=grpS)
+[sw200, sw104, sw52, sw20, sw21] = request.security(syminfo.tickerid, "D", [ta.sma(close, 1400), ta.sma(close, 728), ta.sma(close, 364), ta.sma(close, 140), ta.ema(close, 147)])
+[ww200, ww104, ww52, ww20, ww21] = request.security(syminfo.tickerid, "W", [ta.sma(close, 200), ta.sma(close, 104), ta.sma(close, 52), ta.sma(close, 20), ta.ema(close, 21)])
+w200 = smooth ? sw200 : ww200
+w104 = smooth ? sw104 : ww104
+w52  = smooth ? sw52  : ww52
+w20  = smooth ? sw20  : ww20
+w21  = smooth ? sw21  : ww21
+[d20, d50, d200, dvw, dc]   = request.security(syminfo.tickerid, "D", [ta.sma(close, 20), ta.sma(close, 50), ta.sma(close, 200), math.sum(hlc3 * volume, 200) / math.sum(volume, 200), close])
+// gaps 5 days ago, for the cross-watch rows (pace of convergence)
+[gGD5, gYY5] = request.security(syminfo.tickerid, "D", [(ta.sma(close, 50) - ta.sma(close, 200))[5], (ta.sma(close, 364) - ta.sma(close, 728))[5]])
+
 // ───────── Plots ─────────
 plot(w200, "200W SMA", col200w, lw, display = v200w ? display.all : display.none)
 plot(w104, "2-yr SMA", col2y, lw, display = v2y ? display.all : display.none)
