@@ -7,16 +7,20 @@ indicator("MSB & OB Toolkit (honest stats)", "MSB & OB Toolkit (honest)", overla
 //---------------------------------------------------------------------------------------------------------------------}
 // Constants
 //---------------------------------------------------------------------------------------------------------------------{
-color BULL_COLOR      = #089981
-color BEAR_COLOR      = #f23645
-color HPZ_BULL        = #1de9b6
-color HPZ_BEAR        = #ff5252
+COLORS_GROUP = "Colors (text, lines, boxes)"
+color BULL_COLOR      = input.color(#00E5FF, "Bullish",            group = COLORS_GROUP, inline = "c1")
+color BEAR_COLOR      = input.color(#FFD600, "Bearish",            group = COLORS_GROUP, inline = "c1")
+color HPZ_BULL        = input.color(#2979FF, "HP bullish",         group = COLORS_GROUP, inline = "c2")
+color HPZ_BEAR        = input.color(#FF6D00, "HP bearish",         group = COLORS_GROUP, inline = "c2")
+color GOOD_COLOR      = input.color(#00E5FF, "Table: held 50%+",   group = COLORS_GROUP, inline = "c3")
+color BAD_COLOR       = input.color(#FFD600, "Table: held <50%",   group = COLORS_GROUP, inline = "c3")
+string obLabelSizeIn  = input.string("Small", "Block label size", options = ["Tiny", "Small", "Normal", "Large"], group = COLORS_GROUP)
 color NEUTRAL_COLOR   = color.gray
 
 // Table Constants
-DATA                  = #DBDBDB
-HEADERS                 = #808080
-BACKGROUND              = #161616
+DATA                  = input.color(#FFFFFF, "Table: numbers",   group = COLORS_GROUP, inline = "c4")
+HEADERS                 = input.color(#BDBDBD, "Table: labels",  group = COLORS_GROUP, inline = "c4")
+BACKGROUND              = input.color(#161616, "Table: background", group = COLORS_GROUP)
 BORDERS                 = #2E2E2E
 
 TOP_RIGHT               = 'Top Right'
@@ -228,7 +232,7 @@ if isMSBBull or isMSBBear
             obBox := box.new(bar_index[obIdx], obTop, bar_index + 15, obBottom, border_color = color.new(baseColor, 60), bgcolor = color.new(baseColor, 85), border_style = line.style_dashed, border_width = 1)
             obPoc := line.new(bar_index[obIdx], obPOC, bar_index + 15, obPOC, color = color.new(baseColor, 70), style = line.style_dashed, width = 1)
 
-        obLabel := label.new(bar_index + 18, obPOC, "str " + str.tostring(score, "#"), color = color.new(baseColor, 100), textcolor = isHPZ ? hpzColor : baseColor, style = label.style_none, size = size.tiny, textalign = text.align_left)
+        obLabel := label.new(bar_index + 18, obPOC, "str " + str.tostring(score, "#"), color = color.new(baseColor, 100), textcolor = isHPZ ? hpzColor : baseColor, style = label.style_none, size = obLabelSizeIn == "Tiny" ? size.tiny : obLabelSizeIn == "Normal" ? size.normal : obLabelSizeIn == "Large" ? size.large : size.small, textalign = text.align_left)
 
         OrderBlock newOB = OrderBlock.new(obBox, obLabel, obPoc, score, obTop, obBottom, isMSBBull, isHPZ, false, 0, bar_index)
         obArray.push(newOB)
@@ -357,13 +361,13 @@ if showStatsInput and barstate.islast
     cell(t_able, 1, 0, 'Held', color = HEADERS)
     cell(t_able, 2, 0, 'Resolved', color = HEADERS)
     cell(t_able, 0, 1, 'All blocks', color = HEADERS, align = text.align_left)
-    cell(t_able, 1, 1, f_pct(allHeld, allRes), color = allRes > 0 and allHeld * 2 >= allRes ? BULL_COLOR : BEAR_COLOR)
+    cell(t_able, 1, 1, f_pct(allHeld, allRes), color = allRes > 0 and allHeld * 2 >= allRes ? GOOD_COLOR : BAD_COLOR)
     cell(t_able, 2, 1, str.tostring(allHeld) + " / " + str.tostring(allRes), color = DATA)
     cell(t_able, 0, 2, 'HP blocks (str > 80)', color = HEADERS, align = text.align_left)
-    cell(t_able, 1, 2, f_pct(hpHeld, hpHeld + hpBroken), color = HPZ_BULL)
+    cell(t_able, 1, 2, f_pct(hpHeld, hpHeld + hpBroken), color = hpHeld * 2 >= hpHeld + hpBroken ? GOOD_COLOR : BAD_COLOR)
     cell(t_able, 2, 2, str.tostring(hpHeld) + " / " + str.tostring(hpHeld + hpBroken), color = DATA)
     cell(t_able, 0, 3, 'Regular blocks', color = HEADERS, align = text.align_left)
-    cell(t_able, 1, 3, f_pct(rgHeld, rgHeld + rgBroken), color = DATA)
+    cell(t_able, 1, 3, f_pct(rgHeld, rgHeld + rgBroken), color = rgHeld * 2 >= rgHeld + rgBroken ? GOOD_COLOR : BAD_COLOR)
     cell(t_able, 2, 3, str.tostring(rgHeld) + " / " + str.tostring(rgHeld + rgBroken), color = DATA)
     cell(t_able, 0, 4, 'Retested so far', color = HEADERS, align = text.align_left)
     cell(t_able, 1, 4, str.tostring(hpRetest + rgRetest), color = DATA)
