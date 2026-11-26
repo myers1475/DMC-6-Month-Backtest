@@ -1,5 +1,5 @@
 //@version=6
-indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, scale=scale.right, format=format.price, max_labels_count=100, max_lines_count=100)
+indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, scale=scale.right, format=format.price, max_labels_count=500, max_lines_count=100)
 
 // ───────── Core weekly SMAs ─────────
 grpC = "Core weekly SMAs"
@@ -130,18 +130,22 @@ golden = ta.crossover(d50, d200)
 death  = ta.crossunder(d50, d200)
 yyUp   = ta.crossover(w52, w104)
 yyDn   = ta.crossunder(w52, w104)
-plotshape(mkGD and golden ? d200 : na, "Golden cross", shape.xcross, location.absolute, mkUp, text="Golden", textcolor=mkUp, size=size.tiny)
-plotshape(mkGD and death  ? d200 : na, "Death cross",  shape.xcross, location.absolute, mkDn, text="Death",  textcolor=mkDn, size=size.tiny)
-plotshape(mkYY and yyUp   ? w104 : na, "1Y over 2Y",   shape.xcross, location.absolute, mkUp, text="1Y>2Y",  textcolor=mkUp, size=size.tiny)
-plotshape(mkYY and yyDn   ? w104 : na, "1Y under 2Y",  shape.xcross, location.absolute, mkDn, text="1Y<2Y",  textcolor=mkDn, size=size.tiny)
 regChg = regime != regime[1] and not na(regime[1])
-plotshape(mkReg and regChg and regime == 1,  "To BULL",       shape.triangleup,   location.belowbar, colBull, text="Bull",  textcolor=colBull, size=size.tiny)
-plotshape(mkReg and regChg and regime == 0,  "To TRANSITION", shape.diamond,      location.abovebar, colTran, text="Trans", textcolor=colTran, size=size.tiny)
-plotshape(mkReg and regChg and regime == -1, "To BEAR",       shape.triangledown, location.abovebar, colBear, text="Bear",  textcolor=colBear, size=size.tiny)
-plotshape(mkVw and ta.crossover(dc, vwRef)  ? vwRef : na, "VWAP reclaim", shape.triangleup,   location.absolute, mkUp, text="VWAP", textcolor=mkUp, size=size.tiny)
-plotshape(mkVw and ta.crossunder(dc, vwRef) ? vwRef : na, "VWAP lost",    shape.triangledown, location.absolute, mkDn, text="VWAP", textcolor=mkDn, size=size.tiny)
-plotshape(mkBm and ta.crossover(dc, bHi)  ? bHi : na, "BMSB reclaim", shape.triangleup,   location.absolute, mkUp, text="BMSB", textcolor=mkUp, size=size.tiny)
-plotshape(mkBm and ta.crossunder(dc, bLo) ? bLo : na, "BMSB lost",    shape.triangledown, location.absolute, mkDn, text="BMSB", textcolor=mkDn, size=size.tiny)
+// markers drawn as labels (no plot budget used)
+f_mk(bool cond, float y, string yl, string st, string txt, color col) =>
+    if cond
+        label.new(bar_index, na(y) ? close : y, txt, yloc = yl == "above" ? yloc.abovebar : yl == "below" ? yloc.belowbar : yloc.price, style=st, color=col, textcolor=col, size=size.tiny)
+f_mk(mkGD and golden, d200, "price", label.style_xcross, "Golden", mkUp)
+f_mk(mkGD and death,  d200, "price", label.style_xcross, "Death",  mkDn)
+f_mk(mkYY and yyUp,   w104, "price", label.style_xcross, "1Y>2Y",  mkUp)
+f_mk(mkYY and yyDn,   w104, "price", label.style_xcross, "1Y<2Y",  mkDn)
+f_mk(mkReg and regChg and regime == 1,  na, "below", label.style_triangleup,   "Bull",  colBull)
+f_mk(mkReg and regChg and regime == 0,  na, "above", label.style_diamond,      "Trans", colTran)
+f_mk(mkReg and regChg and regime == -1, na, "above", label.style_triangledown, "Bear",  colBear)
+f_mk(mkVw and ta.crossover(dc, vwRef),  vwRef, "price", label.style_triangleup,   "VWAP", mkUp)
+f_mk(mkVw and ta.crossunder(dc, vwRef), vwRef, "price", label.style_triangledown, "VWAP", mkDn)
+f_mk(mkBm and ta.crossover(dc, bHi),    bHi,   "price", label.style_triangleup,   "BMSB", mkUp)
+f_mk(mkBm and ta.crossunder(dc, bLo),   bLo,   "price", label.style_triangledown, "BMSB", mkDn)
 
 // ───────── 4-year cycle clock (anchored to halvings) ─────────
 // Phase windows in months after each halving, from 2016/2020/2024 history:
