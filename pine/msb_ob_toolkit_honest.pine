@@ -14,6 +14,7 @@ color HPZ_BULL        = input.color(#2979FF, "HP bullish",         group = COLOR
 color HPZ_BEAR        = input.color(#FF6D00, "HP bearish",         group = COLORS_GROUP, inline = "c2")
 color GOOD_COLOR      = input.color(#00E5FF, "Table: held 50%+",   group = COLORS_GROUP, inline = "c3")
 color BAD_COLOR       = input.color(#FFD600, "Table: held <50%",   group = COLORS_GROUP, inline = "c3")
+color OB_TEXT_COLOR   = input.color(#000000, "Block score text", group = COLORS_GROUP)
 string obLabelSizeIn  = input.string("Small", "Block label size", options = ["Tiny", "Small", "Normal", "Large"], group = COLORS_GROUP)
 color NEUTRAL_COLOR   = color.gray
 
@@ -232,7 +233,7 @@ if isMSBBull or isMSBBear
             obBox := box.new(bar_index[obIdx], obTop, bar_index + 15, obBottom, border_color = color.new(baseColor, 60), bgcolor = color.new(baseColor, 85), border_style = line.style_dashed, border_width = 1)
             obPoc := line.new(bar_index[obIdx], obPOC, bar_index + 15, obPOC, color = color.new(baseColor, 70), style = line.style_dashed, width = 1)
 
-        obLabel := label.new(bar_index + 18, obPOC, "str " + str.tostring(score, "#"), color = color.new(baseColor, 100), textcolor = isHPZ ? hpzColor : baseColor, style = label.style_none, size = obLabelSizeIn == "Tiny" ? size.tiny : obLabelSizeIn == "Normal" ? size.normal : obLabelSizeIn == "Large" ? size.large : size.small, textalign = text.align_left)
+        obLabel := label.new(bar_index + 18, obPOC, "str " + str.tostring(score, "#"), color = color.new(baseColor, 100), textcolor = OB_TEXT_COLOR, style = label.style_none, size = obLabelSizeIn == "Tiny" ? size.tiny : obLabelSizeIn == "Normal" ? size.normal : obLabelSizeIn == "Large" ? size.large : size.small, textalign = text.align_left)
 
         OrderBlock newOB = OrderBlock.new(obBox, obLabel, obPoc, score, obTop, obBottom, isMSBBull, isHPZ, false, 0, bar_index)
         obArray.push(newOB)
@@ -305,7 +306,7 @@ if obArray.size() > 0
                 else
                     ob.boxId.set_bgcolor(color.new(NEUTRAL_COLOR, 90))
                     ob.boxId.set_border_color(color.new(NEUTRAL_COLOR, 70))
-                    ob.labelId.set_textcolor(color.new(NEUTRAL_COLOR, 50))
+                    ob.labelId.set_textcolor(color.new(OB_TEXT_COLOR, 50))
                     ob.pocLineId.set_color(color.new(NEUTRAL_COLOR, 80))
 
                     // Default to non-extended for broken blocks
