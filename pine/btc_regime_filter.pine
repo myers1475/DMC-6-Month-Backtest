@@ -1,26 +1,42 @@
 //@version=6
 indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, scale=scale.right, format=format.price, max_labels_count=50)
 
-// ───────── Lines ─────────
-grpL = "Lines"
-show200w = input.bool(true, "200W SMA",             inline="a", group=grpL)
-col200w  = input.color(#FF3B3B, "",                 inline="a", group=grpL)
-show2y   = input.bool(true, "2-yr SMA (104W)",      inline="b", group=grpL)
-col2y    = input.color(#FF9F1A, "",                 inline="b", group=grpL)
-show1y   = input.bool(true, "1-yr SMA (52W)",       inline="c", group=grpL)
-col1y    = input.color(#FFE01A, "",                 inline="c", group=grpL)
-show200d = input.bool(true, "200D SMA",             inline="d", group=grpL)
-col200d  = input.color(#FFFFFF, "",                 inline="d", group=grpL)
-show20w  = input.bool(true, "BMSB 20W SMA",         inline="e", group=grpL)
-col20w   = input.color(#00E676, "",                 inline="e", group=grpL)
-show21w  = input.bool(true, "BMSB 21W EMA",         inline="f", group=grpL)
-col21w   = input.color(#00B0FF, "",                 inline="f", group=grpL)
-show20d  = input.bool(true, "Bear band 20D SMA",    inline="g", group=grpL)
-col20d   = input.color(#E040FB, "",                 inline="g", group=grpL)
-show50d  = input.bool(true, "Bear band 50D SMA",    inline="h", group=grpL)
-col50d   = input.color(#FF4081, "",                 inline="h", group=grpL)
-showVw   = input.bool(true, "Bear band 200D VWAP",  inline="i", group=grpL)
-colVw    = input.color(#00FFFF, "",                 inline="i", group=grpL)
+// ───────── Core weekly SMAs ─────────
+grpC = "Core weekly SMAs"
+showCore = input.bool(true, "Show group", group=grpC)
+show200w = input.bool(true, "200W SMA",        inline="a", group=grpC)
+col200w  = input.color(#FF3B3B, "",            inline="a", group=grpC)
+show2y   = input.bool(true, "2-yr SMA (104W)", inline="b", group=grpC)
+col2y    = input.color(#FF9F1A, "",            inline="b", group=grpC)
+show1y   = input.bool(true, "1-yr SMA (52W)",  inline="c", group=grpC)
+col1y    = input.color(#FFE01A, "",            inline="c", group=grpC)
+
+// ───────── Bull market support band ─────────
+grpB = "Bull market support band"
+showBull = input.bool(true, "Show group", group=grpB)
+show20w  = input.bool(true, "20W SMA",        inline="e", group=grpB)
+col20w   = input.color(#00E676, "",           inline="e", group=grpB)
+show21w  = input.bool(true, "21W EMA",        inline="f", group=grpB)
+col21w   = input.color(#00B0FF, "",           inline="f", group=grpB)
+fillBmsb = input.bool(true, "Shade band",     inline="fb", group=grpB)
+colBmsbF = input.color(color.new(#00E676, 80), "", inline="fb", group=grpB)
+
+// ───────── Bear market resistance band ─────────
+grpR = "Bear market resistance band"
+showBearG = input.bool(true, "Show group", group=grpR)
+show20d   = input.bool(true, "20D SMA",       inline="g", group=grpR)
+col20d    = input.color(#E040FB, "",          inline="g", group=grpR)
+show50d   = input.bool(true, "50D SMA",       inline="h", group=grpR)
+col50d    = input.color(#FF4081, "",          inline="h", group=grpR)
+showVw    = input.bool(true, "200D VWAP",     inline="i", group=grpR)
+colVw     = input.color(#00FFFF, "",          inline="i", group=grpR)
+fillBear  = input.bool(true, "Shade band (20D–50D)", inline="fr", group=grpR)
+colBearF  = input.color(color.new(#FF4081, 80), "", inline="fr", group=grpR)
+
+// ───────── Other ─────────
+grpO = "Other"
+show200d = input.bool(true, "200D SMA",       inline="d", group=grpO)
+col200d  = input.color(#FFFFFF, "",           inline="d", group=grpO)
 
 // ───────── Style ─────────
 grpS = "Style"
@@ -28,9 +44,18 @@ lw         = input.int(3, "Line width", minval=1, maxval=6, group=grpS)
 showLbl    = input.bool(false, "Name + price labels at right edge", group=grpS)
 lblOff     = input.int(6, "Label offset (bars right of last bar)", minval=0, maxval=100, group=grpS)
 lblSize    = input.string(size.normal, "Label size", options=[size.small, size.normal, size.large], group=grpS)
-fillBmsb   = input.bool(true, "Fill bull market support band (20W–21W)", group=grpS)
-fillBear   = input.bool(true, "Fill bear resistance band (20D–50D)", group=grpS)
-fillTransp = input.int(80, "Fill transparency", minval=0, maxval=100, group=grpS)
+
+// group masters applied to each line
+show200w := showCore and show200w
+show2y   := showCore and show2y
+show1y   := showCore and show1y
+show20w  := showBull and show20w
+show21w  := showBull and show21w
+fillBmsb := showBull and fillBmsb
+show20d  := showBearG and show20d
+show50d  := showBearG and show50d
+showVw   := showBearG and showVw
+fillBear := showBearG and fillBear
 
 // ───────── Regime state ─────────
 grpT = "Regime state"
@@ -66,8 +91,8 @@ p21w = plot(w21, "BMSB 21W EMA", show21w ? col21w : na, lw)
 p20d = plot(d20, "20D SMA",      show20d ? col20d : na, lw)
 p50d = plot(d50, "50D SMA",      show50d ? col50d : na, lw)
 plot(dvw,  "200D VWAP",       showVw   ? colVw   : na, lw)
-fill(p20w, p21w, fillBmsb ? color.new(col20w, fillTransp) : na, "BMSB fill")
-fill(p20d, p50d, fillBear ? color.new(col50d, fillTransp) : na, "Bear band fill")
+fill(p20w, p21w, fillBmsb ? colBmsbF : na, "BMSB fill")
+fill(p20d, p50d, fillBear ? colBearF : na, "Bear band fill")
 
 // ───────── Regime ─────────
 // Bull: daily close above the whole BMSB AND above the 200D VWAP
