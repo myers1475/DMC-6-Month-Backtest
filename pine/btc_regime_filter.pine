@@ -225,8 +225,8 @@ if barstate.islast
             for [i, m] in array.from(0.0, 6.0, 15.0, 20.0, 27.0, 33.0)
                 int bt = h + math.round(m * MS_MO)
                 if bt > time and bt < time + int(60 * MS_MO)
-                    array.push(projL, line.new(bt, close, bt, close * 1.01, xloc=xloc.bar_time, extend=extend.both, color=color.new(f_pCol(i), 30), style=line.style_dashed, width=1))
-                    array.push(projB, label.new(bt, yTop, f_pName(i) + (h > lastKnown and i == 0 ? " (est.)" : ""), xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.black, 100), textcolor=f_pCol(i), size=size.tiny))
+                    array.push(projL, line.new(bt, close, bt, close * 1.01, xloc=xloc.bar_time, extend=extend.both, color=f_pCol(i), style=line.style_dashed, width=2))
+                    array.push(projB, label.new(bt, yTop, f_pName(i) + (h > lastKnown and i == 0 ? " (est.)" : ""), xloc=xloc.bar_time, style=label.style_label_left, color=f_pCol(i), textcolor=color.black, size=size.small))
 
 f_up(float v) => na(v) ? 0 : dc > v ? 1 : 0
 score = f_up(w200) + f_up(w104) + f_up(w52) + f_up(d200) + f_up(w20) + f_up(w21) + f_up(d20) + f_up(d50) + f_up(dvw)
