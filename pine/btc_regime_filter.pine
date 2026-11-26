@@ -151,12 +151,13 @@ showStrip = input.bool(true, "Phase strip across top", group=grpY)
 showCyc   = input.bool(true, "Cycle header (phase + read)", group=grpY)
 showProj  = input.bool(true, "Project future phases (dashed lines)", group=grpY)
 cycPos    = input.string(position.top_center, "Header position", options=[position.top_center, position.top_left, position.top_right, position.bottom_center], group=grpY)
-cChop = input.color(#FFD600, "Halving chop",      inline="y1", group=grpY)
-cExp  = input.color(#76FF03, "Expansion",         inline="y1", group=grpY)
-cTop  = input.color(#FF9100, "Top zone",          inline="y2", group=grpY)
-cBear = input.color(#FF1744, "Bear",              inline="y2", group=grpY)
-cBot  = input.color(#00E676, "Bottom zone",       inline="y3", group=grpY)
-cPre  = input.color(#00B0FF, "Pre-halving build", inline="y3", group=grpY)
+// Three parent phases, each with two sub-phases in shades of one color
+cExp  = input.color(#00C853, "Bull · Expansion",              inline="y1", group=grpY)
+cTop  = input.color(#B9F6CA, "Bull · Topping",                inline="y1", group=grpY)
+cOut  = input.color(#D50000, "Bear · Stay out",               inline="y2", group=grpY)
+cAcc  = input.color(#FF8A80, "Bear · Bottom accumulation",    inline="y2", group=grpY)
+cUnc  = input.color(#FFAB00, "Transition · Uncertainty",      inline="y3", group=grpY)
+cChop = input.color(#FFF176, "Transition · Halving chop",     inline="y3", group=grpY)
 
 MS_MO = 30.44 * 86400000.0
 var array<int> halvings = array.from(timestamp("UTC", 2012, 11, 28), timestamp("UTC", 2016, 7, 9), timestamp("UTC", 2020, 5, 11), timestamp("UTC", 2024, 4, 19), timestamp("UTC", 2028, 4, 15), timestamp("UTC", 2032, 4, 10))
@@ -170,8 +171,10 @@ f_lastHalving(int t) =>
     h
 
 f_phase(float m) => not na(m) ? (m < 6 ? 0 : m < 15 ? 1 : m < 20 ? 2 : m < 27 ? 3 : m < 33 ? 4 : 5) : na
-f_pName(int p) => p == 0 ? "Halving chop" : p == 1 ? "Expansion" : p == 2 ? "Top zone" : p == 3 ? "Bear" : p == 4 ? "Bottom zone" : p == 5 ? "Pre-halving build" : ""
-f_pCol(int p)  => p == 0 ? cChop : p == 1 ? cExp : p == 2 ? cTop : p == 3 ? cBear : p == 4 ? cBot : cPre
+// 0 Halving chop (0-6 mo) · 1 Expansion (6-15) · 2 Topping (15-20) · 3 Stay out (20-27) · 4 Bottom accumulation (27-33) · 5 Uncertainty (33 to next halving)
+f_pName(int p)   => p == 0 ? "Halving chop" : p == 1 ? "Expansion" : p == 2 ? "Topping" : p == 3 ? "Stay out" : p == 4 ? "Bottom accumulation" : p == 5 ? "Uncertainty" : ""
+f_pParent(int p) => p == 1 or p == 2 ? "BULL" : p == 3 or p == 4 ? "BEAR" : "TRANSITION"
+f_pCol(int p)    => p == 0 ? cChop : p == 1 ? cExp : p == 2 ? cTop : p == 3 ? cOut : p == 4 ? cAcc : cUnc
 
 hNow   = f_lastHalving(time)
 moNow  = na(hNow) ? na : (time - hNow) / MS_MO
@@ -180,13 +183,17 @@ phCol  = f_pCol(phase)
 phNew  = phase != phase[1]
 
 plotshape(showStrip and not na(phase), "Cycle strip", shape.square, location.top, phCol, size=size.tiny)
-if showStrip and phNew and not na(phase)
-    label.new(bar_index, high, f_pName(phase), yloc=yloc.abovebar, style=label.style_label_down, color=color.new(color.black, 100), textcolor=phCol, size=size.tiny)
+plotchar(showStrip and phNew and phase == 0, "Strip: Halving chop", "▾", location.top, cChop, text="Transition · Halving chop",  textcolor=cChop, size=size.tiny)
+plotchar(showStrip and phNew and phase == 1, "Strip: Expansion",    "▾", location.top, cExp,  text="Bull · Expansion",           textcolor=cExp,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 2, "Strip: Topping",      "▾", location.top, cTop,  text="Bull · Topping",             textcolor=cTop,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 3, "Strip: Stay out",     "▾", location.top, cOut,  text="Bear · Stay out",            textcolor=cOut,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 4, "Strip: Bottom acc.",  "▾", location.top, cAcc,  text="Bear · Bottom accumulation", textcolor=cAcc,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 5, "Strip: Uncertainty",  "▾", location.top, cUnc,  text="Transition · Uncertainty",   textcolor=cUnc,  size=size.tiny)
 
 // Interpretive read: cycle phase x regime (from the 2016-2026 chop study)
 f_read(int p, int r) =>
     p == 4 ? (r == -1 ? "Bottom window, regime still BEAR: ladder buys, expect chop until BMSB/VWAP reclaim" : r == 0 ? "Bottom window, regime turning: watch for a held reclaim of the bands" : "Bottom window + BULL: early-cycle reclaims have tended to hold") :
-     p == 5 ? (r == 1 ? "Pre-halving build: accumulate; pre-top chop resolved UP 4 of 4" : "Pre-halving pullback: weakness has been a buy in this phase") :
+     p == 5 ? (r == 1 ? "Pre-halving uncertainty, regime BULL: pre-top chop resolved UP 4 of 4" : "Pre-halving uncertainty: weakness has been a buy in this phase") :
      p == 0 ? "Halving chop is normal (2020, 2024): flips here resolved UP; accumulate through them" :
      p == 1 ? (r == 1 ? "Expansion: trend phase, hold" : "Mid-bull pause: chop in this phase resolved UP historically") :
      p == 2 ? (r == 1 ? "Top window (tops at 17-18 mo): plan time-based exits" : "Top window + weakening regime: take profit") :
@@ -211,7 +218,7 @@ var array<label> projB = array.new<label>()
 if barstate.islast
     [nT, nP] = f_nextBoundary(time)
     if showCyc and not na(phase)
-        hTxt = "Cycle: " + str.upper(f_pName(phase)) + "  ·  month " + str.tostring(math.floor(moNow)) + " since halving  ·  next: " + f_pName(nP) + " ~" + str.format_time(nT, "MMM yyyy", "UTC")
+        hTxt = "Cycle: " + f_pParent(phase) + " · " + str.upper(f_pName(phase)) + "  ·  month " + str.tostring(math.floor(moNow)) + " since halving  ·  next: " + f_pParent(nP) + " · " + f_pName(nP) + " ~" + str.format_time(nT, "MMM yyyy", "UTC")
         table.cell(cyc, 0, 0, hTxt, text_color=phCol, bgcolor=color.new(color.black, 25), text_size=size.small)
         table.cell(cyc, 0, 1, f_read(phase, regime), text_color=color.white, bgcolor=color.new(color.black, 25), text_size=size.small)
     for l in projL
@@ -226,7 +233,7 @@ if barstate.islast
                 int bt = h + math.round(m * MS_MO)
                 if bt > time and bt < time + int(60 * MS_MO)
                     array.push(projL, line.new(bt, close, bt, close * 1.01, xloc=xloc.bar_time, extend=extend.both, color=f_pCol(i), style=line.style_dashed, width=2))
-                    array.push(projB, label.new(bt, yTop, f_pName(i) + (h > lastKnown and i == 0 ? " (est.)" : ""), xloc=xloc.bar_time, style=label.style_label_left, color=f_pCol(i), textcolor=color.black, size=size.small))
+                    array.push(projB, label.new(bt, yTop, f_pParent(i) + " · " + f_pName(i) + (h > lastKnown and i == 0 ? " (est.)" : ""), xloc=xloc.bar_time, style=label.style_label_left, color=f_pCol(i), textcolor=color.black, size=size.small))
 
 f_up(float v) => na(v) ? 0 : dc > v ? 1 : 0
 score = f_up(w200) + f_up(w104) + f_up(w52) + f_up(d200) + f_up(w20) + f_up(w21) + f_up(d20) + f_up(d50) + f_up(dvw)
