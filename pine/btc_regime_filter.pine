@@ -18,7 +18,7 @@ show20w  = input.bool(true, "20W SMA",        inline="e", group=grpB)
 col20w   = input.color(#00E676, "",           inline="e", group=grpB)
 show21w  = input.bool(true, "21W EMA",        inline="f", group=grpB)
 col21w   = input.color(#00B0FF, "",           inline="f", group=grpB)
-fillBmsb = input.bool(true, "Shade band",     inline="fb", group=grpB)
+fillBmsb = input.bool(true, "Shade band (cloud)",     inline="fb", group=grpB)
 colBmsbF = input.color(color.new(#00E676, 80), "", inline="fb", group=grpB)
 
 // ───────── Bear market resistance band ─────────
@@ -30,7 +30,7 @@ show50d   = input.bool(true, "50D SMA",       inline="h", group=grpR)
 col50d    = input.color(#FF4081, "",          inline="h", group=grpR)
 showVw    = input.bool(true, "200D VWAP",     inline="i", group=grpR)
 colVw     = input.color(#00FFFF, "",          inline="i", group=grpR)
-fillBear  = input.bool(true, "Shade band (20D–50D)", inline="fr", group=grpR)
+fillBear  = input.bool(true, "Shade band (cloud around all 3 lines)", inline="fr", group=grpR)
 colBearF  = input.color(color.new(#FF4081, 80), "", inline="fr", group=grpR)
 
 // ───────── Other ─────────
@@ -57,6 +57,17 @@ show50d  := showBearG and show50d
 showVw   := showBearG and showVw
 fillBear := showBearG and fillBear
 
+// ───────── Cross markers ─────────
+grpX = "Cross markers"
+mkGD   = input.bool(true,  "Golden / death cross (50D vs 200D SMA)", group=grpX)
+mkYY   = input.bool(true,  "1-yr vs 2-yr SMA cross", group=grpX)
+mkReg  = input.bool(true,  "Regime changes (Bull / Transition / Bear)", group=grpX)
+mkVw   = input.bool(false, "Daily close reclaims / loses 200D VWAP", group=grpX)
+mkBm   = input.bool(false, "Daily close reclaims / loses BMSB", group=grpX)
+mkUp   = input.color(#00E676, "Bullish marker", inline="mk", group=grpX)
+mkDn   = input.color(#FF1744, "Bearish marker", inline="mk", group=grpX)
+mkSize = input.string(size.small, "Marker size", options=[size.tiny, size.small, size.normal], group=grpX)
+
 // ───────── Regime state ─────────
 grpT = "Regime state"
 showTbl    = input.bool(true, "Show table", group=grpT)
@@ -80,19 +91,28 @@ w52  = smooth ? sw52  : ww52
 w20  = smooth ? sw20  : ww20
 w21  = smooth ? sw21  : ww21
 [d20, d50, d200, dvw, dc]   = request.security(syminfo.tickerid, "D", [ta.sma(close, 20), ta.sma(close, 50), ta.sma(close, 200), math.sum(hlc3 * volume, 200) / math.sum(volume, 200), close])
+// gaps 5 days ago, for the cross-watch rows (pace of convergence)
+[gGD5, gYY5] = request.security(syminfo.tickerid, "D", [(ta.sma(close, 50) - ta.sma(close, 200))[5], (ta.sma(close, 364) - ta.sma(close, 728))[5]])
 
 // ───────── Plots ─────────
 plot(w200, "200W SMA",        show200w ? col200w : na, lw)
 plot(w104, "2-yr SMA",        show2y   ? col2y   : na, lw)
 plot(w52,  "1-yr SMA",        show1y   ? col1y   : na, lw)
 plot(d200, "200D SMA",        show200d ? col200d : na, lw)
-p20w = plot(w20, "BMSB 20W SMA", show20w ? col20w : na, lw)
-p21w = plot(w21, "BMSB 21W EMA", show21w ? col21w : na, lw)
-p20d = plot(d20, "20D SMA",      show20d ? col20d : na, lw)
-p50d = plot(d50, "50D SMA",      show50d ? col50d : na, lw)
+plot(w20, "BMSB 20W SMA", show20w ? col20w : na, lw)
+plot(w21, "BMSB 21W EMA", show21w ? col21w : na, lw)
+plot(d20, "20D SMA",      show20d ? col20d : na, lw)
+plot(d50, "50D SMA",      show50d ? col50d : na, lw)
 plot(dvw,  "200D VWAP",       showVw   ? colVw   : na, lw)
-fill(p20w, p21w, fillBmsb ? colBmsbF : na, "BMSB fill")
-fill(p20d, p50d, fillBear ? colBearF : na, "Bear band fill")
+// Clouds: shade from the lowest to the highest line in each band
+pBullHi = plot(math.max(w20, w21), "BMSB cloud top", display=display.none)
+pBullLo = plot(math.min(w20, w21), "BMSB cloud bottom", display=display.none)
+fill(pBullHi, pBullLo, fillBmsb ? colBmsbF : na, "BMSB cloud")
+bearHi = na(dvw) ? math.max(d20, d50) : math.max(d20, d50, dvw)
+bearLo = na(dvw) ? math.min(d20, d50) : math.min(d20, d50, dvw)
+pBearHi = plot(bearHi, "Bear cloud top", display=display.none)
+pBearLo = plot(bearLo, "Bear cloud bottom", display=display.none)
+fill(pBearHi, pBearLo, fillBear ? colBearF : na, "Bear resistance cloud")
 
 // ───────── Regime ─────────
 // Bull: daily close above the whole BMSB AND above the 200D VWAP
@@ -105,6 +125,24 @@ regime = dc > bHi and dc > vwRef ? 1 : dc < bLo and dc < vwRef ? -1 : 0
 regCol = regime == 1 ? colBull : regime == -1 ? colBear : colTran
 regTxt = regime == 1 ? "BULL" : regime == -1 ? "BEAR" : "TRANSITION"
 bgcolor(showTint ? color.new(regCol, tintTransp) : na, title="Regime tint")
+
+// ───────── Cross markers ─────────
+golden = ta.crossover(d50, d200)
+death  = ta.crossunder(d50, d200)
+yyUp   = ta.crossover(w52, w104)
+yyDn   = ta.crossunder(w52, w104)
+plotshape(mkGD and golden ? d200 : na, "Golden cross", shape.labelup,   location.absolute, mkUp, text="Golden cross\n50D > 200D", textcolor=color.black, size=mkSize)
+plotshape(mkGD and death  ? d200 : na, "Death cross",  shape.labeldown, location.absolute, mkDn, text="Death cross\n50D < 200D",  textcolor=color.white, size=mkSize)
+plotshape(mkYY and yyUp   ? w104 : na, "1Y over 2Y",   shape.labelup,   location.absolute, mkUp, text="1Y > 2Y",  textcolor=color.black, size=mkSize)
+plotshape(mkYY and yyDn   ? w104 : na, "1Y under 2Y",  shape.labeldown, location.absolute, mkDn, text="1Y < 2Y",  textcolor=color.white, size=mkSize)
+regChg = regime != regime[1] and not na(regime[1])
+plotshape(mkReg and regChg and regime == 1,  "To BULL",       shape.labelup,   location.belowbar, colBull, text="→ BULL",       textcolor=color.black, size=mkSize)
+plotshape(mkReg and regChg and regime == 0,  "To TRANSITION", shape.diamond,   location.abovebar, colTran, text="→ TRANSITION", textcolor=colTran,     size=mkSize)
+plotshape(mkReg and regChg and regime == -1, "To BEAR",       shape.labeldown, location.abovebar, colBear, text="→ BEAR",       textcolor=color.white, size=mkSize)
+plotshape(mkVw and ta.crossover(dc, vwRef)  ? vwRef : na, "VWAP reclaim", shape.triangleup,   location.absolute, mkUp, text="VWAP reclaim", textcolor=mkUp, size=mkSize)
+plotshape(mkVw and ta.crossunder(dc, vwRef) ? vwRef : na, "VWAP lost",    shape.triangledown, location.absolute, mkDn, text="VWAP lost",    textcolor=mkDn, size=mkSize)
+plotshape(mkBm and ta.crossover(dc, bHi)  ? bHi : na, "BMSB reclaim", shape.triangleup,   location.absolute, mkUp, text="BMSB reclaim", textcolor=mkUp, size=mkSize)
+plotshape(mkBm and ta.crossunder(dc, bLo) ? bLo : na, "BMSB lost",    shape.triangledown, location.absolute, mkDn, text="BMSB lost",    textcolor=mkDn, size=mkSize)
 
 f_up(float v) => na(v) ? 0 : dc > v ? 1 : 0
 score = f_up(w200) + f_up(w104) + f_up(w52) + f_up(d200) + f_up(w20) + f_up(w21) + f_up(d20) + f_up(d50) + f_up(dvw)
@@ -133,7 +171,7 @@ if barstate.islast
         f_add(showVw,   dvw,  "200D VWAP",    colVw)
 
 // ───────── Table ─────────
-var table tbl = table.new(tblPos, 4, 12, border_width=1)
+var table tbl = table.new(tblPos, 4, 15, border_width=1)
 bgc = color.new(color.black, 15)
 
 f_cell(int c, int r, string txt, color tc) =>
@@ -146,6 +184,18 @@ f_row(int r, string name, float v, color col) =>
     f_cell(1, r, na(v) ? "n/a" : f_fmt(v), color.white)
     f_cell(2, r, na(dist) ? "" : (dist >= 0 ? "+" : "") + str.tostring(dist, "0.0") + "%", color.white)
     f_cell(3, r, na(v) ? "" : above ? "Above" : "Below", above ? colBull : colBear)
+
+// gap = fast minus slow; pace = linear days to cross if the last 5 days' convergence continues
+f_watch(int r, string name, float gap, float gap5, string dnTxt, string upTxt) =>
+    rate   = (gap5 - gap) / 5                     // per-day move of the gap toward zero (if same sign as gap)
+    closing = not na(rate) and rate != 0 and math.sign(rate) == math.sign(gap)
+    days   = closing ? gap / rate : na
+    f_cell(0, r, name, color.white)
+    f_cell(1, r, na(gap) ? "n/a" : (gap >= 0 ? "+" : "") + f_fmt(gap), color.white)
+    f_cell(2, r, closing ? "~" + str.tostring(math.round(days)) + "d" : "widening", closing ? colTran : color.gray)
+    nextTxt = closing ? (gap >= 0 ? dnTxt : upTxt) + " watch" : (gap >= 0 ? "Bull side" : "Bear side")
+    nextCol = closing ? (gap >= 0 ? colBear : colBull) : (gap >= 0 ? colBull : colBear)
+    f_cell(3, r, nextTxt, nextCol)
 
 if barstate.islast and showTbl
     f_cell(0, 0, "Line", color.gray)
@@ -169,3 +219,9 @@ if barstate.islast and showTbl
     f_cell(1, 11, f_fmt(dc), color.white)
     f_cell(2, 11, "", color.white)
     f_cell(3, 11, "", color.white)
+    f_watch(13, "50D vs 200D", d50 - d200, gGD5, "Death cross", "Golden cross")
+    f_watch(14, "1Y vs 2Y SMA", w52 - w104, gYY5, "1Y < 2Y", "1Y > 2Y")
+    f_cell(0, 12, "Cross watch", color.gray)
+    f_cell(1, 12, "Gap", color.gray)
+    f_cell(2, 12, "Pace", color.gray)
+    f_cell(3, 12, "Next", color.gray)
