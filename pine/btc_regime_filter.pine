@@ -1,0 +1,137 @@
+//@version=6
+indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, max_labels_count=50)
+
+// ───────── Lines ─────────
+grpL = "Lines"
+show200w = input.bool(true, "200W SMA",             inline="a", group=grpL)
+col200w  = input.color(#FF3B3B, "",                 inline="a", group=grpL)
+show2y   = input.bool(true, "2-yr SMA (104W)",      inline="b", group=grpL)
+col2y    = input.color(#FF9F1A, "",                 inline="b", group=grpL)
+show1y   = input.bool(true, "1-yr SMA (52W)",       inline="c", group=grpL)
+col1y    = input.color(#FFE01A, "",                 inline="c", group=grpL)
+show200d = input.bool(true, "200D SMA",             inline="d", group=grpL)
+col200d  = input.color(#FFFFFF, "",                 inline="d", group=grpL)
+show20w  = input.bool(true, "BMSB 20W SMA",         inline="e", group=grpL)
+col20w   = input.color(#00E676, "",                 inline="e", group=grpL)
+show21w  = input.bool(true, "BMSB 21W EMA",         inline="f", group=grpL)
+col21w   = input.color(#00B0FF, "",                 inline="f", group=grpL)
+show20d  = input.bool(true, "Bear band 20D SMA",    inline="g", group=grpL)
+col20d   = input.color(#E040FB, "",                 inline="g", group=grpL)
+show50d  = input.bool(true, "Bear band 50D SMA",    inline="h", group=grpL)
+col50d   = input.color(#FF4081, "",                 inline="h", group=grpL)
+showVw   = input.bool(true, "Bear band 200D VWAP",  inline="i", group=grpL)
+colVw    = input.color(#00FFFF, "",                 inline="i", group=grpL)
+
+// ───────── Style ─────────
+grpS = "Style"
+lw         = input.int(3, "Line width", minval=1, maxval=6, group=grpS)
+showLbl    = input.bool(true, "Name + price labels at right edge", group=grpS)
+lblOff     = input.int(6, "Label offset (bars right of last bar)", minval=0, maxval=100, group=grpS)
+lblSize    = input.string(size.normal, "Label size", options=[size.small, size.normal, size.large], group=grpS)
+fillBmsb   = input.bool(true, "Fill bull market support band (20W–21W)", group=grpS)
+fillBear   = input.bool(true, "Fill bear resistance band (20D–50D)", group=grpS)
+fillTransp = input.int(80, "Fill transparency", minval=0, maxval=100, group=grpS)
+
+// ───────── Regime state ─────────
+grpT = "Regime state"
+showTbl    = input.bool(true, "Show table", group=grpT)
+tblPos     = input.string(position.top_right, "Table position", options=[position.top_right, position.middle_right, position.bottom_right, position.top_left, position.middle_left, position.bottom_left], group=grpT)
+tblSize    = input.string(size.normal, "Table text size", options=[size.small, size.normal, size.large], group=grpT)
+showTint   = input.bool(true, "Background tint by regime", group=grpT)
+tintTransp = input.int(90, "Tint transparency", minval=50, maxval=100, group=grpT)
+colBull    = input.color(#00E676, "Bull",       inline="r", group=grpT)
+colTran    = input.color(#FFD600, "Transition", inline="r", group=grpT)
+colBear    = input.color(#FF1744, "Bear",       inline="r", group=grpT)
+
+// ───────── Data (same values on any chart timeframe) ─────────
+[w200, w104, w52, w20, w21] = request.security(syminfo.tickerid, "W", [ta.sma(close, 200), ta.sma(close, 104), ta.sma(close, 52), ta.sma(close, 20), ta.ema(close, 21)])
+[d20, d50, d200, dvw, dc]   = request.security(syminfo.tickerid, "D", [ta.sma(close, 20), ta.sma(close, 50), ta.sma(close, 200), math.sum(hlc3 * volume, 200) / math.sum(volume, 200), close])
+
+// ───────── Plots ─────────
+plot(w200, "200W SMA",        show200w ? col200w : na, lw)
+plot(w104, "2-yr SMA",        show2y   ? col2y   : na, lw)
+plot(w52,  "1-yr SMA",        show1y   ? col1y   : na, lw)
+plot(d200, "200D SMA",        show200d ? col200d : na, lw)
+p20w = plot(w20, "BMSB 20W SMA", show20w ? col20w : na, lw)
+p21w = plot(w21, "BMSB 21W EMA", show21w ? col21w : na, lw)
+p20d = plot(d20, "20D SMA",      show20d ? col20d : na, lw)
+p50d = plot(d50, "50D SMA",      show50d ? col50d : na, lw)
+plot(dvw,  "200D VWAP",       showVw   ? colVw   : na, lw)
+fill(p20w, p21w, fillBmsb ? color.new(col20w, fillTransp) : na, "BMSB fill")
+fill(p20d, p50d, fillBear ? color.new(col50d, fillTransp) : na, "Bear band fill")
+
+// ───────── Regime ─────────
+// Bull: daily close above the whole BMSB AND above the 200D VWAP
+// Bear: daily close below the whole BMSB AND below the 200D VWAP
+// Transition: anything mixed
+vwRef  = na(dvw) ? d200 : dvw          // falls back to 200D SMA if the symbol has no volume
+bHi    = math.max(w20, w21)
+bLo    = math.min(w20, w21)
+regime = dc > bHi and dc > vwRef ? 1 : dc < bLo and dc < vwRef ? -1 : 0
+regCol = regime == 1 ? colBull : regime == -1 ? colBear : colTran
+regTxt = regime == 1 ? "BULL" : regime == -1 ? "BEAR" : "TRANSITION"
+bgcolor(showTint ? color.new(regCol, tintTransp) : na, title="Regime tint")
+
+f_up(float v) => na(v) ? 0 : dc > v ? 1 : 0
+score = f_up(w200) + f_up(w104) + f_up(w52) + f_up(d200) + f_up(w20) + f_up(w21) + f_up(d20) + f_up(d50) + f_up(dvw)
+
+f_fmt(float v) => str.tostring(v, "#,###")
+
+// ───────── Labels ─────────
+var array<label> lbls = array.new<label>()
+f_add(bool ok, float y, string name, color col) =>
+    if ok and not na(y)
+        array.push(lbls, label.new(bar_index + lblOff, y, name + "  " + f_fmt(y), xloc=xloc.bar_index, color=col, style=label.style_label_left, textcolor=color.black, size=lblSize))
+
+if barstate.islast
+    for l in lbls
+        label.delete(l)
+    array.clear(lbls)
+    if showLbl
+        f_add(show200w, w200, "200W SMA",     col200w)
+        f_add(show2y,   w104, "2-yr SMA",     col2y)
+        f_add(show1y,   w52,  "1-yr SMA",     col1y)
+        f_add(show200d, d200, "200D SMA",     col200d)
+        f_add(show20w,  w20,  "BMSB 20W SMA", col20w)
+        f_add(show21w,  w21,  "BMSB 21W EMA", col21w)
+        f_add(show20d,  d20,  "20D SMA",      col20d)
+        f_add(show50d,  d50,  "50D SMA",      col50d)
+        f_add(showVw,   dvw,  "200D VWAP",    colVw)
+
+// ───────── Table ─────────
+var table tbl = table.new(tblPos, 4, 12, border_width=1)
+bgc = color.new(color.black, 15)
+
+f_cell(int c, int r, string txt, color tc) =>
+    table.cell(tbl, c, r, txt, text_color=tc, bgcolor=bgc, text_size=tblSize, text_halign=text.align_left)
+
+f_row(int r, string name, float v, color col) =>
+    dist  = na(v) ? na : (v / dc - 1) * 100
+    above = dc > v
+    f_cell(0, r, name, col)
+    f_cell(1, r, na(v) ? "n/a" : f_fmt(v), color.white)
+    f_cell(2, r, na(dist) ? "" : (dist >= 0 ? "+" : "") + str.tostring(dist, "0.0") + "%", color.white)
+    f_cell(3, r, na(v) ? "" : above ? "Above" : "Below", above ? colBull : colBear)
+
+if barstate.islast and showTbl
+    f_cell(0, 0, "Line", color.gray)
+    f_cell(1, 0, "Level", color.gray)
+    f_cell(2, 0, "To level", color.gray)
+    f_cell(3, 0, "Price is", color.gray)
+    f_row(1, "200W SMA",     w200, col200w)
+    f_row(2, "2-yr SMA",     w104, col2y)
+    f_row(3, "1-yr SMA",     w52,  col1y)
+    f_row(4, "200D SMA",     d200, col200d)
+    f_row(5, "BMSB 20W SMA", w20,  col20w)
+    f_row(6, "BMSB 21W EMA", w21,  col21w)
+    f_row(7, "20D SMA",      d20,  col20d)
+    f_row(8, "50D SMA",      d50,  col50d)
+    f_row(9, "200D VWAP",    dvw,  colVw)
+    f_cell(0, 10, "Regime", color.white)
+    f_cell(1, 10, regTxt, regCol)
+    f_cell(2, 10, "Above", color.white)
+    f_cell(3, 10, str.tostring(score) + " of 9", regCol)
+    f_cell(0, 11, "Daily close", color.gray)
+    f_cell(1, 11, f_fmt(dc), color.white)
+    f_cell(2, 11, "", color.white)
+    f_cell(3, 11, "", color.white)
