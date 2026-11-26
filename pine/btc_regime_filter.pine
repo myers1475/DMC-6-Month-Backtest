@@ -160,7 +160,7 @@ cExp  = input.color(#00C853, "Bull · Expansion",              inline="y1", grou
 cTop  = input.color(#B9F6CA, "Bull · Topping",                inline="y1", group=grpY)
 cOut  = input.color(#D50000, "Bear · Stay out",               inline="y2", group=grpY)
 cAcc  = input.color(#FF8A80, "Bear · Bottom accumulation",    inline="y2", group=grpY)
-cUnc  = input.color(#FFAB00, "Transition · Uncertainty",      inline="y3", group=grpY)
+cUnc  = input.color(#FFAB00, "Transition · Recovery",      inline="y3", group=grpY)
 cChop = input.color(#FFF176, "Transition · Halving chop",     inline="y3", group=grpY)
 
 MS_MO = 30.44 * 86400000.0
@@ -175,8 +175,8 @@ f_lastHalving(int t) =>
     h
 
 f_phase(float m) => not na(m) ? (m < 6 ? 0 : m < 15 ? 1 : m < 20 ? 2 : m < 27 ? 3 : m < 33 ? 4 : 5) : na
-// 0 Halving chop (0-6 mo) · 1 Expansion (6-15) · 2 Topping (15-20) · 3 Stay out (20-27) · 4 Bottom accumulation (27-33) · 5 Uncertainty (33 to next halving)
-f_pName(int p)   => p == 0 ? "Halving chop" : p == 1 ? "Expansion" : p == 2 ? "Topping" : p == 3 ? "Stay out" : p == 4 ? "Bottom accumulation" : p == 5 ? "Uncertainty" : ""
+// 0 Halving chop (0-6 mo) · 1 Expansion (6-15) · 2 Topping (15-20) · 3 Stay out (20-27) · 4 Bottom accumulation (27-33) · 5 Recovery (33 to next halving)
+f_pName(int p)   => p == 0 ? "Halving chop" : p == 1 ? "Expansion" : p == 2 ? "Topping" : p == 3 ? "Stay out" : p == 4 ? "Bottom accumulation" : p == 5 ? "Recovery" : ""
 f_pParent(int p) => p == 1 or p == 2 ? "BULL" : p == 3 or p == 4 ? "BEAR" : "TRANSITION"
 f_pCol(int p)    => p == 0 ? cChop : p == 1 ? cExp : p == 2 ? cTop : p == 3 ? cOut : p == 4 ? cAcc : cUnc
 
@@ -192,12 +192,12 @@ plotchar(showStrip and phNew and phase == 1, "Strip: Expansion",    "▾", locat
 plotchar(showStrip and phNew and phase == 2, "Strip: Topping",      "▾", location.top, cTop,  text="Bull · Topping",             textcolor=cTop,  size=size.tiny)
 plotchar(showStrip and phNew and phase == 3, "Strip: Stay out",     "▾", location.top, cOut,  text="Bear · Stay out",            textcolor=cOut,  size=size.tiny)
 plotchar(showStrip and phNew and phase == 4, "Strip: Bottom acc.",  "▾", location.top, cAcc,  text="Bear · Bottom accumulation", textcolor=cAcc,  size=size.tiny)
-plotchar(showStrip and phNew and phase == 5, "Strip: Uncertainty",  "▾", location.top, cUnc,  text="Transition · Uncertainty",   textcolor=cUnc,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 5, "Strip: Recovery",  "▾", location.top, cUnc,  text="Transition · Recovery",   textcolor=cUnc,  size=size.tiny)
 
 // Interpretive read: cycle phase x regime (from the 2016-2026 chop study)
 f_read(int p, int r) =>
     p == 4 ? (r == -1 ? "Bottom window, regime still BEAR: ladder buys, expect chop until BMSB/VWAP reclaim" : r == 0 ? "Bottom window, regime turning: watch for a held reclaim of the bands" : "Bottom window + BULL: early-cycle reclaims have tended to hold") :
-     p == 5 ? (r == 1 ? "Pre-halving uncertainty, regime BULL: pre-top chop resolved UP 4 of 4" : "Pre-halving uncertainty: weakness has been a buy in this phase") :
+     p == 5 ? (r == 1 ? "Recovery phase: first rally off the bottom; rose in 3 of 3 cycles" : "Recovery phase pullback: rose in 3 of 3 cycles, but 2019 shows it can retrace hard before the halving") :
      p == 0 ? "Halving chop is normal (2020, 2024): flips here resolved UP; accumulate through them" :
      p == 1 ? (r == 1 ? "Expansion: trend phase, hold" : "Mid-bull pause: chop in this phase resolved UP historically") :
      p == 2 ? (r == 1 ? "Top window (tops at 17-18 mo): plan time-based exits" : "Top window + weakening regime: take profit") :
