@@ -1,4 +1,4 @@
-# Jay (Jayyseff) chat log: calls to check later
+# Jay Log: market calls from the group chat, to check later
 
 Matt asked to save his market conversations with Jay (PMO creator, ~$5M account, ~10 others in the chat)
 to see how things turn out. Raw transcripts sit next to this file, one per date.
