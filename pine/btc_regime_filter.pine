@@ -1,5 +1,5 @@
 //@version=6
-indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, scale=scale.right, format=format.price, max_labels_count=50)
+indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, scale=scale.right, format=format.price, max_labels_count=100, max_lines_count=100)
 
 // ───────── Core weekly SMAs ─────────
 grpC = "Core weekly SMAs"
@@ -130,18 +130,107 @@ golden = ta.crossover(d50, d200)
 death  = ta.crossunder(d50, d200)
 yyUp   = ta.crossover(w52, w104)
 yyDn   = ta.crossunder(w52, w104)
-plotshape(mkGD and golden ? d200 : na, "Golden cross", shape.labelup,   location.absolute, mkUp, text="Golden cross\n50D > 200D", textcolor=color.black, size=size.small)
-plotshape(mkGD and death  ? d200 : na, "Death cross",  shape.labeldown, location.absolute, mkDn, text="Death cross\n50D < 200D",  textcolor=color.white, size=size.small)
-plotshape(mkYY and yyUp   ? w104 : na, "1Y over 2Y",   shape.labelup,   location.absolute, mkUp, text="1Y > 2Y",  textcolor=color.black, size=size.small)
-plotshape(mkYY and yyDn   ? w104 : na, "1Y under 2Y",  shape.labeldown, location.absolute, mkDn, text="1Y < 2Y",  textcolor=color.white, size=size.small)
+plotshape(mkGD and golden ? d200 : na, "Golden cross", shape.xcross, location.absolute, mkUp, text="Golden", textcolor=mkUp, size=size.tiny)
+plotshape(mkGD and death  ? d200 : na, "Death cross",  shape.xcross, location.absolute, mkDn, text="Death",  textcolor=mkDn, size=size.tiny)
+plotshape(mkYY and yyUp   ? w104 : na, "1Y over 2Y",   shape.xcross, location.absolute, mkUp, text="1Y>2Y",  textcolor=mkUp, size=size.tiny)
+plotshape(mkYY and yyDn   ? w104 : na, "1Y under 2Y",  shape.xcross, location.absolute, mkDn, text="1Y<2Y",  textcolor=mkDn, size=size.tiny)
 regChg = regime != regime[1] and not na(regime[1])
-plotshape(mkReg and regChg and regime == 1,  "To BULL",       shape.labelup,   location.belowbar, colBull, text="→ BULL",       textcolor=color.black, size=size.small)
-plotshape(mkReg and regChg and regime == 0,  "To TRANSITION", shape.diamond,   location.abovebar, colTran, text="→ TRANSITION", textcolor=colTran,     size=size.small)
-plotshape(mkReg and regChg and regime == -1, "To BEAR",       shape.labeldown, location.abovebar, colBear, text="→ BEAR",       textcolor=color.white, size=size.small)
-plotshape(mkVw and ta.crossover(dc, vwRef)  ? vwRef : na, "VWAP reclaim", shape.triangleup,   location.absolute, mkUp, text="VWAP reclaim", textcolor=mkUp, size=size.small)
-plotshape(mkVw and ta.crossunder(dc, vwRef) ? vwRef : na, "VWAP lost",    shape.triangledown, location.absolute, mkDn, text="VWAP lost",    textcolor=mkDn, size=size.small)
-plotshape(mkBm and ta.crossover(dc, bHi)  ? bHi : na, "BMSB reclaim", shape.triangleup,   location.absolute, mkUp, text="BMSB reclaim", textcolor=mkUp, size=size.small)
-plotshape(mkBm and ta.crossunder(dc, bLo) ? bLo : na, "BMSB lost",    shape.triangledown, location.absolute, mkDn, text="BMSB lost",    textcolor=mkDn, size=size.small)
+plotshape(mkReg and regChg and regime == 1,  "To BULL",       shape.triangleup,   location.belowbar, colBull, text="Bull",  textcolor=colBull, size=size.tiny)
+plotshape(mkReg and regChg and regime == 0,  "To TRANSITION", shape.diamond,      location.abovebar, colTran, text="Trans", textcolor=colTran, size=size.tiny)
+plotshape(mkReg and regChg and regime == -1, "To BEAR",       shape.triangledown, location.abovebar, colBear, text="Bear",  textcolor=colBear, size=size.tiny)
+plotshape(mkVw and ta.crossover(dc, vwRef)  ? vwRef : na, "VWAP reclaim", shape.triangleup,   location.absolute, mkUp, text="VWAP", textcolor=mkUp, size=size.tiny)
+plotshape(mkVw and ta.crossunder(dc, vwRef) ? vwRef : na, "VWAP lost",    shape.triangledown, location.absolute, mkDn, text="VWAP", textcolor=mkDn, size=size.tiny)
+plotshape(mkBm and ta.crossover(dc, bHi)  ? bHi : na, "BMSB reclaim", shape.triangleup,   location.absolute, mkUp, text="BMSB", textcolor=mkUp, size=size.tiny)
+plotshape(mkBm and ta.crossunder(dc, bLo) ? bLo : na, "BMSB lost",    shape.triangledown, location.absolute, mkDn, text="BMSB", textcolor=mkDn, size=size.tiny)
+
+// ───────── 4-year cycle clock (anchored to halvings) ─────────
+// Phase windows in months after each halving, from 2016/2020/2024 history:
+// tops came at 17-18 mo, bottoms at 29-30 mo.
+grpY = "Cycle timing"
+showStrip = input.bool(true, "Phase strip across top", group=grpY)
+showCyc   = input.bool(true, "Cycle header (phase + read)", group=grpY)
+showProj  = input.bool(true, "Project future phases (dashed lines)", group=grpY)
+cycPos    = input.string(position.top_center, "Header position", options=[position.top_center, position.top_left, position.top_right, position.bottom_center], group=grpY)
+cChop = input.color(#FFD600, "Halving chop",      inline="y1", group=grpY)
+cExp  = input.color(#76FF03, "Expansion",         inline="y1", group=grpY)
+cTop  = input.color(#FF9100, "Top zone",          inline="y2", group=grpY)
+cBear = input.color(#FF1744, "Bear",              inline="y2", group=grpY)
+cBot  = input.color(#00E676, "Bottom zone",       inline="y3", group=grpY)
+cPre  = input.color(#00B0FF, "Pre-halving build", inline="y3", group=grpY)
+
+MS_MO = 30.44 * 86400000.0
+var array<int> halvings = array.from(timestamp("UTC", 2012, 11, 28), timestamp("UTC", 2016, 7, 9), timestamp("UTC", 2020, 5, 11), timestamp("UTC", 2024, 4, 19), timestamp("UTC", 2028, 4, 15), timestamp("UTC", 2032, 4, 10))
+var int lastKnown = timestamp("UTC", 2024, 4, 19)   // later dates are estimates
+
+f_lastHalving(int t) =>
+    int h = na
+    for x in halvings
+        if x <= t
+            h := x
+    h
+
+f_phase(float m) => not na(m) ? (m < 6 ? 0 : m < 15 ? 1 : m < 20 ? 2 : m < 27 ? 3 : m < 33 ? 4 : 5) : na
+f_pName(int p) => p == 0 ? "Halving chop" : p == 1 ? "Expansion" : p == 2 ? "Top zone" : p == 3 ? "Bear" : p == 4 ? "Bottom zone" : p == 5 ? "Pre-halving build" : ""
+f_pCol(int p)  => p == 0 ? cChop : p == 1 ? cExp : p == 2 ? cTop : p == 3 ? cBear : p == 4 ? cBot : cPre
+
+hNow   = f_lastHalving(time)
+moNow  = na(hNow) ? na : (time - hNow) / MS_MO
+phase  = f_phase(moNow)
+phCol  = f_pCol(phase)
+phNew  = phase != phase[1]
+
+plotshape(showStrip and not na(phase), "Cycle strip", shape.square, location.top, phCol, size=size.tiny)
+plotchar(showStrip and phNew and phase == 0, "Strip: Halving chop", "▼", location.top, cChop, text="Halving chop", textcolor=cChop, size=size.tiny)
+plotchar(showStrip and phNew and phase == 1, "Strip: Expansion",    "▼", location.top, cExp,  text="Expansion",    textcolor=cExp,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 2, "Strip: Top zone",     "▼", location.top, cTop,  text="Top zone",     textcolor=cTop,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 3, "Strip: Bear",         "▼", location.top, cBear, text="Bear",         textcolor=cBear, size=size.tiny)
+plotchar(showStrip and phNew and phase == 4, "Strip: Bottom zone",  "▼", location.top, cBot,  text="Bottom zone",  textcolor=cBot,  size=size.tiny)
+plotchar(showStrip and phNew and phase == 5, "Strip: Pre-halving",  "▼", location.top, cPre,  text="Pre-halving",  textcolor=cPre,  size=size.tiny)
+
+// Interpretive read: cycle phase x regime (from the 2016-2026 chop study)
+f_read(int p, int r) =>
+    p == 4 ? (r == -1 ? "Bottom window, regime still BEAR: ladder buys, expect chop until BMSB/VWAP reclaim" : r == 0 ? "Bottom window, regime turning: watch for a held reclaim of the bands" : "Bottom window + BULL: early-cycle reclaims have tended to hold") :
+     p == 5 ? (r == 1 ? "Pre-halving build: accumulate; pre-top chop resolved UP 4 of 4" : "Pre-halving pullback: weakness has been a buy in this phase") :
+     p == 0 ? "Halving chop is normal (2020, 2024): flips here resolved UP; accumulate through them" :
+     p == 1 ? (r == 1 ? "Expansion: trend phase, hold" : "Mid-bull pause: chop in this phase resolved UP historically") :
+     p == 2 ? (r == 1 ? "Top window (tops at 17-18 mo): plan time-based exits" : "Top window + weakening regime: take profit") :
+     p == 3 ? (r == 1 ? "Bear phase: post-top BULL flips have been traps (2 of 2)" : "Bear phase: patience; bottom window opens ~27 mo") : ""
+
+// next phase boundary after now
+f_nextBoundary(int t) =>
+    int bestT = na
+    int bestP = na
+    for h in halvings
+        for [i, m] in array.from(0.0, 6.0, 15.0, 20.0, 27.0, 33.0)
+            int bt = h + math.round(m * MS_MO)
+            if bt > t and (na(bestT) or bt < bestT)
+                bestT := bt
+                bestP := i
+    [bestT, bestP]
+
+yTop = ta.highest(high, 150)
+var table cyc = table.new(cycPos, 1, 2, border_width=0)
+var array<line>  projL = array.new<line>()
+var array<label> projB = array.new<label>()
+if barstate.islast
+    [nT, nP] = f_nextBoundary(time)
+    if showCyc and not na(phase)
+        hTxt = "Cycle: " + str.upper(f_pName(phase)) + "  ·  month " + str.tostring(math.floor(moNow)) + " since halving  ·  next: " + f_pName(nP) + " ~" + str.format_time(nT, "MMM yyyy", "UTC")
+        table.cell(cyc, 0, 0, hTxt, text_color=phCol, bgcolor=color.new(color.black, 25), text_size=size.small)
+        table.cell(cyc, 0, 1, f_read(phase, regime), text_color=color.white, bgcolor=color.new(color.black, 25), text_size=size.small)
+    for l in projL
+        line.delete(l)
+    for b in projB
+        label.delete(b)
+    array.clear(projL)
+    array.clear(projB)
+    if showProj
+        for h in halvings
+            for [i, m] in array.from(0.0, 6.0, 15.0, 20.0, 27.0, 33.0)
+                int bt = h + math.round(m * MS_MO)
+                if bt > time and bt < time + int(60 * MS_MO)
+                    array.push(projL, line.new(bt, close, bt, close * 1.01, xloc=xloc.bar_time, extend=extend.both, color=color.new(f_pCol(i), 30), style=line.style_dashed, width=1))
+                    array.push(projB, label.new(bt, yTop, f_pName(i) + (h > lastKnown and i == 0 ? " (est.)" : ""), xloc=xloc.bar_time, style=label.style_label_left, color=color.new(color.black, 100), textcolor=f_pCol(i), size=size.tiny))
 
 f_up(float v) => na(v) ? 0 : dc > v ? 1 : 0
 score = f_up(w200) + f_up(w104) + f_up(w52) + f_up(d200) + f_up(w20) + f_up(w21) + f_up(d20) + f_up(d50) + f_up(dvw)
