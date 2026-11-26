@@ -1,5 +1,5 @@
 //@version=6
-indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, max_labels_count=50)
+indicator("BTC HTF Regime Filter", shorttitle="BTC Regime", overlay=true, scale=scale.right, format=format.price, max_labels_count=50)
 
 // ───────── Lines ─────────
 grpL = "Lines"
@@ -25,7 +25,7 @@ colVw    = input.color(#00FFFF, "",                 inline="i", group=grpL)
 // ───────── Style ─────────
 grpS = "Style"
 lw         = input.int(3, "Line width", minval=1, maxval=6, group=grpS)
-showLbl    = input.bool(true, "Name + price labels at right edge", group=grpS)
+showLbl    = input.bool(false, "Name + price labels at right edge", group=grpS)
 lblOff     = input.int(6, "Label offset (bars right of last bar)", minval=0, maxval=100, group=grpS)
 lblSize    = input.string(size.normal, "Label size", options=[size.small, size.normal, size.large], group=grpS)
 fillBmsb   = input.bool(true, "Fill bull market support band (20W–21W)", group=grpS)
@@ -35,7 +35,7 @@ fillTransp = input.int(80, "Fill transparency", minval=0, maxval=100, group=grpS
 // ───────── Regime state ─────────
 grpT = "Regime state"
 showTbl    = input.bool(true, "Show table", group=grpT)
-tblPos     = input.string(position.top_right, "Table position", options=[position.top_right, position.middle_right, position.bottom_right, position.top_left, position.middle_left, position.bottom_left], group=grpT)
+tblPos     = input.string(position.bottom_left, "Table position", options=[position.top_right, position.middle_right, position.bottom_right, position.top_left, position.middle_left, position.bottom_left], group=grpT)
 tblSize    = input.string(size.normal, "Table text size", options=[size.small, size.normal, size.large], group=grpT)
 showTint   = input.bool(true, "Background tint by regime", group=grpT)
 tintTransp = input.int(90, "Tint transparency", minval=50, maxval=100, group=grpT)
@@ -44,7 +44,16 @@ colTran    = input.color(#FFD600, "Transition", inline="r", group=grpT)
 colBear    = input.color(#FF1744, "Bear",       inline="r", group=grpT)
 
 // ───────── Data (same values on any chart timeframe) ─────────
-[w200, w104, w52, w20, w21] = request.security(syminfo.tickerid, "W", [ta.sma(close, 200), ta.sma(close, 104), ta.sma(close, 52), ta.sma(close, 20), ta.ema(close, 21)])
+// Smooth mode: weekly MAs computed on daily bars at 7x length (BTC trades 7 days/week),
+// so they curve with price instead of stair-stepping once a week.
+smooth = input.bool(true, "Smooth weekly lines (daily-equivalent lengths)", group=grpS)
+[sw200, sw104, sw52, sw20, sw21] = request.security(syminfo.tickerid, "D", [ta.sma(close, 1400), ta.sma(close, 728), ta.sma(close, 364), ta.sma(close, 140), ta.ema(close, 147)])
+[ww200, ww104, ww52, ww20, ww21] = request.security(syminfo.tickerid, "W", [ta.sma(close, 200), ta.sma(close, 104), ta.sma(close, 52), ta.sma(close, 20), ta.ema(close, 21)])
+w200 = smooth ? sw200 : ww200
+w104 = smooth ? sw104 : ww104
+w52  = smooth ? sw52  : ww52
+w20  = smooth ? sw20  : ww20
+w21  = smooth ? sw21  : ww21
 [d20, d50, d200, dvw, dc]   = request.security(syminfo.tickerid, "D", [ta.sma(close, 20), ta.sma(close, 50), ta.sma(close, 200), math.sum(hlc3 * volume, 200) / math.sum(volume, 200), close])
 
 // ───────── Plots ─────────
