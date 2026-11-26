@@ -158,3 +158,10 @@ Scenarios: A 1 ~30 / 2 ~40 / 3 ~10 / 4 ~20; B 1 ~40 / 2 ~40 / 3 ~15 / 4 ~5; C 1 
 - Moves between boxes ~17% each: -16.95% (Jun), +16.57% (Aug), -17.02% (Nov). Top to deviation low -37.03%.
 - New low box started mid-Nov at the floor; at 49-76 days it runs to ~early Jan - early Feb 2027 (matches the Q1 window / Cowen's 4-8 weeks).
 - Next ~17% move decides it: up -> ~$70K (range mid, Exhibit E holds); down -> ~$50K (breaks the deviation limit, lands on realized/CVDD $50-53K = case 2).
+
+## Exhibit J (Nov 25 2026): monthly market structure - the stalemate, Matt's chart (TOP PRIORITY for the Nov close)
+![Exhibit J](exhibits/exhibit_J_2026-11-25_btc_monthly_structure.png)
+
+- August close above $71,288.9 (Mar 2024 high, the trigger of the last bull run) = bull structure; November on track to nullify it.
+- Stalemate until a monthly close above $71.3K (bull structure back) OR below $58.5K (next $45.5K, then $38.5K).
+- Confluence: $58.5K = Glassnode's realized-price trigger + monthly H&S neckline; $71.3K = range mid (E); the $58.5-71.3K box = the current low box (E2); $45.5K ~ case 2 low end / LTH $48.3K; $38.5K = balanced price + Ladder A rung 4 ($38,111).
