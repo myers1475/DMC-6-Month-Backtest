@@ -1,0 +1,5 @@
+Symbol,Trade number,Type,Date and time,Order ID,Signal,Price,Size (qty),Size (value),Net PnL USD,Return %,Commission USD,Cumulative PnL USD,Cumulative PnL %
+COMEX_MINI:MGC1!,1,Exit long,"Jan 9, 2025, 19:00",order_0ddb43ab-a47e-4713-a6f3-d5452e8de63f_bracket_tp_06aa8589-d0d1-44fb-b599-7e5bb19c970f,order_0ddb43ab-a47e-4713-a6f3-d5452e8de63f_bracket_tp_06aa8589-d0d1-44fb-b599-7e5bb19c970f,2697.8,4,107260,649.2,0.61,2.8,649.2,6.49
+COMEX_MINI:MGC1!,1,Entry long,"Jan 8, 2025, 23:00",order_0ddb43ab-a47e-4713-a6f3-d5452e8de63f,order_0ddb43ab-a47e-4713-a6f3-d5452e8de63f,2681.5,4,107260,649.2,0.61,2.8,649.2,6.49
+COMEX_MINI:MGC1!,2,Exit long,"Jan 29, 2026, 03:00",order_8cec0c0d-0a16-4643-9e9f-9ef7d9c873a5,order_8cec0c0d-0a16-4643-9e9f-9ef7d9c873a5,3951.1,244,8876591.998171864,763731.28,8.6,240.72,764380.48,7643.8
+COMEX_MINI:MGC1!,2,Entry long,"Jan 10, 2025, 11:00",order_8115e13b-641a-4389-aa02-81ffbb2ae4e5,order_8115e13b-641a-4389-aa02-81ffbb2ae4e5,3637.9,244,8876591.998171864,763731.28,8.6,240.72,764380.48,7643.8
