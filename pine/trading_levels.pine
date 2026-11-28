@@ -3,6 +3,16 @@
 // Top level:    a bull candle followed by a bear candle -> the bear candle's OPEN
 // Each timeframe is read on its own closed candles. Per timeframe, the nearest levels above and
 // below price are drawn (counts chosen in settings). Timeframes below the chart are skipped.
+//
+// Level life cycle (all on the level's own timeframe, closed candles):
+//  1. UNTESTED: new level. Support if below price, resistance if above (by how it formed).
+//  2. First test after price has left the level:
+//     - HOLDS (a candle touches it, no body close through) -> USED
+//     - BREAKS (a body closes through it)                  -> FLIPPED: becomes an untested level on the
+//       other side (lost support = resistance, gained resistance = support)
+//  3. A FLIPPED level gets one test: holds or breaks, either way -> USED
+//  4. A USED level stays (dashed) until price reaches the next level of the same timeframe in the
+//     direction price moved away from it (on a break: the direction of the break). Then it is removed.
 
 //@version=6
 indicator("Trading Levels", shorttitle = "Trading Lvls", overlay = true, max_lines_count = 500, max_labels_count = 500)
@@ -42,28 +52,28 @@ int  w5    = input.int(2, "Width", minval = 1, maxval = 8, inline = "5", group =
 const string G_LV = "Levels"
 bool   showTop  = input.bool(true, "Top levels (bull → bear)", group = G_LV)
 bool   showBot  = input.bool(true, "Bottom levels (bear → bull)", group = G_LV)
-string onBreak  = input.string("Flip once", "When a body closes through", options = ["Flip once", "Remove", "Keep dashed"], group = G_LV, tooltip = "Checked on a closed candle of the level's own timeframe. Flip once: lost support becomes resistance (or gained resistance becomes support); a close back through the flipped level uses it up and removes it. Remove: deleted on the first break. Keep dashed: stays in the broken color.")
+bool   showUsed = input.bool(true, "Show used levels (dashed) until price reaches the next level", group = G_LV)
 
 // ── Colors & labels
 const string G_C = "Colors & labels"
-color cTop     = input.color(#FF9F1C, "Top level color", group = G_C)
-color cBot     = input.color(#00E5FF, "Bottom level color", group = G_C)
-color cBroken  = input.color(#B0B0B0, "Broken level color", group = G_C)
+color cTop     = input.color(#FF9F1C, "Resistance color", group = G_C)
+color cBot     = input.color(#00E5FF, "Support color", group = G_C)
 bool  showLbl  = input.bool(true, "Labels (timeframe + price)", group = G_C)
 color cLblText = input.color(#000000, "Label text color", group = G_C)
 
 const int STORE_CAP = 300   // levels remembered per timeframe (oldest dropped first)
 
-// ── Storage
+// state: 0 untested, 1 flipped (untested on the new side), 2 used (waiting for the next level)
 type LvlSet
     array<float> px
-    array<int>   side   // 1 top, -1 bottom
+    array<int>   side    // 1 resistance, -1 support
     array<int>   t
-    array<bool>  live
-    array<int>   flips
+    array<int>   state
+    array<bool>  armed   // price has left the level since it formed / flipped
+    array<int>   dir     // used levels: direction price is travelling (1 up, -1 down)
 
 f_new() =>
-    LvlSet.new(array.new<float>(), array.new<int>(), array.new<int>(), array.new<bool>(), array.new<int>())
+    LvlSet.new(array.new<float>(), array.new<int>(), array.new<int>(), array.new<int>(), array.new<bool>(), array.new<int>())
 
 var LvlSet sM  = f_new()
 var LvlSet sW  = f_new()
@@ -73,43 +83,73 @@ var LvlSet s1H = f_new()
 var LvlSet s15 = f_new()
 var LvlSet s5  = f_new()
 
+f_remove(LvlSet s, int i) =>
+    array.remove(s.px, i)
+    array.remove(s.side, i)
+    array.remove(s.t, i)
+    array.remove(s.state, i)
+    array.remove(s.armed, i)
+    array.remove(s.dir, i)
+    true
+
 f_add(LvlSet s, float px, int side, int t) =>
     array.push(s.px, px)
     array.push(s.side, side)
     array.push(s.t, t)
-    array.push(s.live, true)
-    array.push(s.flips, 0)
+    array.push(s.state, 0)
+    array.push(s.armed, false)
+    array.push(s.dir, 0)
     if array.size(s.px) > STORE_CAP
-        array.shift(s.px)
-        array.shift(s.side)
-        array.shift(s.t)
-        array.shift(s.live)
-        array.shift(s.flips)
+        f_remove(s, 0)
     true
 
-f_breaks(LvlSet s, float cl) =>
+// Nearest other level beyond px in direction d (na if none)
+f_next(LvlSet s, int skip, float px, int d) =>
+    float best = na
+    for k = 0 to array.size(s.px) - 1
+        if k != skip
+            float q = array.get(s.px, k)
+            if (d == 1 and q > px) or (d == -1 and q < px)
+                best := na(best) ? q : d == 1 ? math.min(best, q) : math.max(best, q)
+    best
+
+// Update every level with the candle that just closed on this timeframe (h, l, c)
+f_update(LvlSet s, float h, float l, float c) =>
     int i = array.size(s.px) - 1
     while i >= 0
-        float px = array.get(s.px, i)
-        int   sd = array.get(s.side, i)
-        if array.get(s.live, i) and (sd == 1 ? cl > px : cl < px)
-            if onBreak == "Flip once" and array.get(s.flips, i) == 0
+        float px  = array.get(s.px, i)
+        int   sd  = array.get(s.side, i)
+        int   st  = array.get(s.state, i)
+        bool  arm = array.get(s.armed, i)
+        bool  touched = l <= px and h >= px
+        bool  broke   = sd == 1 ? c > px : c < px
+        bool  gone = false
+        if st == 2
+            int   d  = array.get(s.dir, i)
+            float nx = f_next(s, i, px, d)
+            if not na(nx) and (d == 1 ? h >= nx : l <= nx)
+                gone := true
+        else if broke
+            if st == 0
                 array.set(s.side, i, -sd)
-                array.set(s.flips, i, 1)
-            else if onBreak == "Keep dashed"
-                array.set(s.live, i, false)
+                array.set(s.state, i, 1)
+                array.set(s.armed, i, false)
             else
-                array.remove(s.px, i)
-                array.remove(s.side, i)
-                array.remove(s.t, i)
-                array.remove(s.live, i)
-                array.remove(s.flips, i)
+                array.set(s.state, i, 2)
+                array.set(s.dir, i, sd)       // travelling the way it broke
+        else if arm and touched
+            array.set(s.state, i, 2)
+            array.set(s.dir, i, -sd)          // held: travelling away from it
+        else if not touched
+            array.set(s.armed, i, true)
+        if gone
+            f_remove(s, i)
         i -= 1
     true
 
-f_run(bool on, string tf, LvlSet s, float o1, float c1, float o2, float c2, int t1, bool newBar) =>
+f_run(bool on, string tf, LvlSet s, float o1, float h1, float l1, float c1, float o2, float c2, int t1, bool newBar) =>
     if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and newBar
-        f_breaks(s, c1)
+        f_update(s, h1, l1, c1)
         if showTop and c2 > o2 and c1 < o1
             f_add(s, o1, 1, t1)
         if showBot and c2 < o2 and c1 > o1
@@ -118,25 +158,25 @@ f_run(bool on, string tf, LvlSet s, float o1, float c1, float o2, float c2, int 
 
 // ── One request per timeframe (closed candles only)
 f_req(string tf) =>
-    request.security(syminfo.tickerid, tf, [open[1], close[1], open[2], close[2], time[1]], lookahead = barmerge.lookahead_on)
+    request.security(syminfo.tickerid, tf, [open[1], high[1], low[1], close[1], open[2], close[2], time[1]], lookahead = barmerge.lookahead_on)
 
-[oM1, cM1, oM2, cM2, tM1] = f_req("M")
-[oW1, cW1, oW2, cW2, tW1] = f_req("W")
-[oD1, cD1, oD2, cD2, tD1] = f_req("D")
-[o41, c41, o42, c42, t41] = f_req("240")
-[oH1, cH1, oH2, cH2, tH1] = f_req("60")
-[oF1, cF1, oF2, cF2, tF1] = f_req("15")
-[o51, c51, o52, c52, t51] = f_req("5")
+[oM1, hM1, lM1, cM1, oM2, cM2, tM1] = f_req("M")
+[oW1, hW1, lW1, cW1, oW2, cW2, tW1] = f_req("W")
+[oD1, hD1, lD1, cD1, oD2, cD2, tD1] = f_req("D")
+[o41, h41, l41, c41, o42, c42, t41] = f_req("240")
+[oH1, hH1, lH1, cH1, oH2, cH2, tH1] = f_req("60")
+[oF1, hF1, lF1, cF1, oF2, cF2, tF1] = f_req("15")
+[o51, h51, l51, c51, o52, c52, t51] = f_req("5")
 
-f_run(onM,  "M",   sM,  oM1, cM1, oM2, cM2, tM1, not na(tM1) and tM1 != nz(tM1[1]))
-f_run(onW,  "W",   sW,  oW1, cW1, oW2, cW2, tW1, not na(tW1) and tW1 != nz(tW1[1]))
-f_run(onD,  "D",   sD,  oD1, cD1, oD2, cD2, tD1, not na(tD1) and tD1 != nz(tD1[1]))
-f_run(on4H, "240", s4H, o41, c41, o42, c42, t41, not na(t41) and t41 != nz(t41[1]))
-f_run(on1H, "60",  s1H, oH1, cH1, oH2, cH2, tH1, not na(tH1) and tH1 != nz(tH1[1]))
-f_run(on15, "15",  s15, oF1, cF1, oF2, cF2, tF1, not na(tF1) and tF1 != nz(tF1[1]))
-f_run(on5,  "5",   s5,  o51, c51, o52, c52, t51, not na(t51) and t51 != nz(t51[1]))
+f_run(onM,  "M",   sM,  oM1, hM1, lM1, cM1, oM2, cM2, tM1, not na(tM1) and tM1 != nz(tM1[1]))
+f_run(onW,  "W",   sW,  oW1, hW1, lW1, cW1, oW2, cW2, tW1, not na(tW1) and tW1 != nz(tW1[1]))
+f_run(onD,  "D",   sD,  oD1, hD1, lD1, cD1, oD2, cD2, tD1, not na(tD1) and tD1 != nz(tD1[1]))
+f_run(on4H, "240", s4H, o41, h41, l41, c41, o42, c42, t41, not na(t41) and t41 != nz(t41[1]))
+f_run(on1H, "60",  s1H, oH1, hH1, lH1, cH1, oH2, cH2, tH1, not na(tH1) and tH1 != nz(tH1[1]))
+f_run(on15, "15",  s15, oF1, hF1, lF1, cF1, oF2, cF2, tF1, not na(tF1) and tF1 != nz(tF1[1]))
+f_run(on5,  "5",   s5,  o51, h51, l51, c51, o52, c52, t51, not na(t51) and t51 != nz(t51[1]))
 
-// ── Draw only the N nearest levels per timeframe, redrawn on the latest bar
+// ── Draw the nearest levels above / below price per timeframe, redrawn on the latest bar
 var array<line>  drawnL = array.new<line>()
 var array<label> drawnB = array.new<label>()
 
@@ -148,7 +188,8 @@ f_pick(LvlSet s, bool above, int n) =>
         array<int>   ids  = array.new<int>()
         for i = 0 to sz - 1
             float px = array.get(s.px, i)
-            if above ? px >= close : px < close
+            bool  ok = showUsed or array.get(s.state, i) != 2
+            if ok and (above ? px >= close : px < close)
                 array.push(dist, math.abs(px - close))
                 array.push(ids, i)
         if array.size(ids) > 0
@@ -161,13 +202,14 @@ f_draw(bool on, string tf, LvlSet s, int nUp, int nDn, int w, string tag) =>
     if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and array.size(s.px) > 0
         array<int> sel = array.concat(f_pick(s, true, nUp), f_pick(s, false, nDn))
         for j in sel
-            float px = array.get(s.px, j)
-            bool  lv = array.get(s.live, j)
-            int   t0 = math.min(array.get(s.t, j), time - 1)
-            color c  = not lv ? cBroken : array.get(s.side, j) == 1 ? cTop : cBot
-            array.push(drawnL, line.new(t0, px, time, px, xloc = xloc.bar_time, extend = extend.right, color = c, width = w, style = lv ? line.style_solid : line.style_dashed))
+            float px   = array.get(s.px, j)
+            int   st   = array.get(s.state, j)
+            int   t0   = math.min(array.get(s.t, j), time - 1)
+            color c    = array.get(s.side, j) == 1 ? cTop : cBot
+            string tg  = tag + (st == 1 ? " flip" : st == 2 ? " used" : "")
+            array.push(drawnL, line.new(t0, px, time, px, xloc = xloc.bar_time, extend = extend.right, color = c, width = w, style = st == 2 ? line.style_dashed : line.style_solid))
             if showLbl
-                array.push(drawnB, label.new(bar_index + 2, px, tag + " " + str.tostring(px, format.mintick), style = label.style_label_left, color = c, textcolor = cLblText, size = size.small))
+                array.push(drawnB, label.new(bar_index + 2, px, tg + " " + str.tostring(px, format.mintick), style = label.style_label_left, color = c, textcolor = cLblText, size = size.small))
     true
 
 if barstate.islast
@@ -177,10 +219,10 @@ if barstate.islast
         label.delete(b)
     array.clear(drawnL)
     array.clear(drawnB)
-    f_draw(onM, "M", sM, aM, bM, wM,  "M")
-    f_draw(onW, "W", sW, aW, bW, wW,  "W")
-    f_draw(onD, "D", sD, aD, bD, wD,  "D")
+    f_draw(onM,  "M",   sM,  aM,  bM,  wM,  "M")
+    f_draw(onW,  "W",   sW,  aW,  bW,  wW,  "W")
+    f_draw(onD,  "D",   sD,  aD,  bD,  wD,  "D")
     f_draw(on4H, "240", s4H, a4H, b4H, w4H, "4H")
-    f_draw(on1H, "60", s1H, a1H, b1H, w1H, "1H")
-    f_draw(on15, "15", s15, a15, b15, w15, "15m")
-    f_draw(on5, "5", s5, a5, b5, w5,  "5m")
+    f_draw(on1H, "60",  s1H, a1H, b1H, w1H, "1H")
+    f_draw(on15, "15",  s15, a15, b15, w15, "15m")
+    f_draw(on5,  "5",   s5,  a5,  b5,  w5,  "5m")
