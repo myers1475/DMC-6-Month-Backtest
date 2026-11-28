@@ -1,35 +1,42 @@
 // Trading Levels: where a long candle meets a short candle (bodies only, wicks ignored)
 // Bottom level: a bear candle followed by a bull candle -> the bull candle's OPEN
 // Top level:    a bull candle followed by a bear candle -> the bear candle's OPEN
-// Each timeframe is read on its own closed candles. Only the N levels nearest to price are drawn
-// per timeframe (N chosen in settings). Timeframes below the chart are skipped.
+// Each timeframe is read on its own closed candles. Per timeframe, the nearest levels above and
+// below price are drawn (counts chosen in settings). Timeframes below the chart are skipped.
 
 //@version=6
 indicator("Trading Levels", shorttitle = "Trading Lvls", overlay = true, max_lines_count = 500, max_labels_count = 500)
 
-// ── Timeframes: show · how many nearest levels · line width
-const string G_TF = "Timeframes (show · nearest count · line width)"
-bool onM  = input.bool(true,  "Monthly", inline = "M",  group = G_TF)
-int  nM   = input.int(3, "", minval = 1, maxval = 50, inline = "M",  group = G_TF)
-int  wM   = input.int(5, "", minval = 1, maxval = 8,  inline = "M",  group = G_TF)
-bool onW  = input.bool(true,  "Weekly",  inline = "W",  group = G_TF)
-int  nW   = input.int(3, "", minval = 1, maxval = 50, inline = "W",  group = G_TF)
-int  wW   = input.int(4, "", minval = 1, maxval = 8,  inline = "W",  group = G_TF)
-bool onD  = input.bool(true,  "Daily",   inline = "D",  group = G_TF)
-int  nD   = input.int(3, "", minval = 1, maxval = 50, inline = "D",  group = G_TF)
-int  wD   = input.int(3, "", minval = 1, maxval = 8,  inline = "D",  group = G_TF)
-bool on4H = input.bool(true,  "4H",      inline = "4H", group = G_TF)
-int  n4H  = input.int(3, "", minval = 1, maxval = 50, inline = "4H", group = G_TF)
-int  w4H  = input.int(3, "", minval = 1, maxval = 8,  inline = "4H", group = G_TF)
-bool on1H = input.bool(true,  "1H",      inline = "1H", group = G_TF)
-int  n1H  = input.int(3, "", minval = 1, maxval = 50, inline = "1H", group = G_TF)
-int  w1H  = input.int(2, "", minval = 1, maxval = 8,  inline = "1H", group = G_TF)
-bool on15 = input.bool(false, "15m",     inline = "15", group = G_TF)
-int  n15  = input.int(3, "", minval = 1, maxval = 50, inline = "15", group = G_TF)
-int  w15  = input.int(2, "", minval = 1, maxval = 8,  inline = "15", group = G_TF)
-bool on5  = input.bool(false, "5m",      inline = "5",  group = G_TF)
-int  n5   = input.int(3, "", minval = 1, maxval = 50, inline = "5",  group = G_TF)
-int  w5   = input.int(2, "", minval = 1, maxval = 8,  inline = "5",  group = G_TF)
+// ── Timeframes: show · levels above · levels below · line width
+const string G_TF = "Timeframes (show · levels above · levels below · line width)"
+bool onM   = input.bool(true, "Monthly", inline = "M", group = G_TF)
+int  aM    = input.int(2, "Above", minval = 0, maxval = 50, inline = "M", group = G_TF)
+int  bM    = input.int(2, "Below", minval = 0, maxval = 50, inline = "M", group = G_TF)
+int  wM    = input.int(5, "Width", minval = 1, maxval = 8, inline = "M", group = G_TF)
+bool onW   = input.bool(true, "Weekly", inline = "W", group = G_TF)
+int  aW    = input.int(2, "Above", minval = 0, maxval = 50, inline = "W", group = G_TF)
+int  bW    = input.int(2, "Below", minval = 0, maxval = 50, inline = "W", group = G_TF)
+int  wW    = input.int(4, "Width", minval = 1, maxval = 8, inline = "W", group = G_TF)
+bool onD   = input.bool(true, "Daily", inline = "D", group = G_TF)
+int  aD    = input.int(2, "Above", minval = 0, maxval = 50, inline = "D", group = G_TF)
+int  bD    = input.int(2, "Below", minval = 0, maxval = 50, inline = "D", group = G_TF)
+int  wD    = input.int(3, "Width", minval = 1, maxval = 8, inline = "D", group = G_TF)
+bool on4H  = input.bool(true, "4H", inline = "4H", group = G_TF)
+int  a4H   = input.int(2, "Above", minval = 0, maxval = 50, inline = "4H", group = G_TF)
+int  b4H   = input.int(2, "Below", minval = 0, maxval = 50, inline = "4H", group = G_TF)
+int  w4H   = input.int(3, "Width", minval = 1, maxval = 8, inline = "4H", group = G_TF)
+bool on1H  = input.bool(true, "1H", inline = "1H", group = G_TF)
+int  a1H   = input.int(2, "Above", minval = 0, maxval = 50, inline = "1H", group = G_TF)
+int  b1H   = input.int(2, "Below", minval = 0, maxval = 50, inline = "1H", group = G_TF)
+int  w1H   = input.int(2, "Width", minval = 1, maxval = 8, inline = "1H", group = G_TF)
+bool on15  = input.bool(false, "15m", inline = "15", group = G_TF)
+int  a15   = input.int(2, "Above", minval = 0, maxval = 50, inline = "15", group = G_TF)
+int  b15   = input.int(2, "Below", minval = 0, maxval = 50, inline = "15", group = G_TF)
+int  w15   = input.int(2, "Width", minval = 1, maxval = 8, inline = "15", group = G_TF)
+bool on5   = input.bool(false, "5m", inline = "5", group = G_TF)
+int  a5    = input.int(2, "Above", minval = 0, maxval = 50, inline = "5", group = G_TF)
+int  b5    = input.int(2, "Below", minval = 0, maxval = 50, inline = "5", group = G_TF)
+int  w5    = input.int(2, "Width", minval = 1, maxval = 8, inline = "5", group = G_TF)
 
 // ── Levels
 const string G_LV = "Levels"
@@ -128,19 +135,32 @@ f_run(on5,  "5",   s5,  o51, c51, o52, c52, t51, not na(t51) and t51 != nz(t51[1
 var array<line>  drawnL = array.new<line>()
 var array<label> drawnB = array.new<label>()
 
-f_draw(bool on, string tf, LvlSet s, int n, int w, string tag) =>
+f_pick(LvlSet s, bool above, int n) =>
+    array<int> out = array.new<int>()
     int sz = array.size(s.px)
-    if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and sz > 0
+    if n > 0 and sz > 0
         array<float> dist = array.new<float>()
+        array<int>   ids  = array.new<int>()
         for i = 0 to sz - 1
-            array.push(dist, math.abs(array.get(s.px, i) - close))
-        array<int> idx = array.sort_indices(dist, order.ascending)
-        for k = 0 to math.min(n, sz) - 1
-            int   j  = array.get(idx, k)
+            float px = array.get(s.px, i)
+            if above ? px >= close : px < close
+                array.push(dist, math.abs(px - close))
+                array.push(ids, i)
+        if array.size(ids) > 0
+            array<int> ord = array.sort_indices(dist, order.ascending)
+            for k = 0 to math.min(n, array.size(ids)) - 1
+                array.push(out, array.get(ids, array.get(ord, k)))
+    out
+
+f_draw(bool on, string tf, LvlSet s, int nUp, int nDn, int w, string tag) =>
+    if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and array.size(s.px) > 0
+        array<int> sel = array.concat(f_pick(s, true, nUp), f_pick(s, false, nDn))
+        for j in sel
             float px = array.get(s.px, j)
             bool  lv = array.get(s.live, j)
+            int   t0 = math.min(array.get(s.t, j), time - 1)
             color c  = not lv ? cBroken : array.get(s.side, j) == 1 ? cTop : cBot
-            array.push(drawnL, line.new(array.get(s.t, j), px, array.get(s.t, j) + 1, px, xloc = xloc.bar_time, extend = extend.right, color = c, width = w, style = lv ? line.style_solid : line.style_dashed))
+            array.push(drawnL, line.new(t0, px, time, px, xloc = xloc.bar_time, extend = extend.right, color = c, width = w, style = lv ? line.style_solid : line.style_dashed))
             if showLbl
                 array.push(drawnB, label.new(bar_index + 2, px, tag + " " + str.tostring(px, format.mintick), style = label.style_label_left, color = c, textcolor = cLblText, size = size.small))
     true
@@ -152,10 +172,10 @@ if barstate.islast
         label.delete(b)
     array.clear(drawnL)
     array.clear(drawnB)
-    f_draw(onM,  "M",   sM,  nM,  wM,  "M")
-    f_draw(onW,  "W",   sW,  nW,  wW,  "W")
-    f_draw(onD,  "D",   sD,  nD,  wD,  "D")
-    f_draw(on4H, "240", s4H, n4H, w4H, "4H")
-    f_draw(on1H, "60",  s1H, n1H, w1H, "1H")
-    f_draw(on15, "15",  s15, n15, w15, "15m")
-    f_draw(on5,  "5",   s5,  n5,  w5,  "5m")
+    f_draw(onM, "M", sM, aM, bM, wM,  "M")
+    f_draw(onW, "W", sW, aW, bW, wW,  "W")
+    f_draw(onD, "D", sD, aD, bD, wD,  "D")
+    f_draw(on4H, "240", s4H, a4H, b4H, w4H, "4H")
+    f_draw(on1H, "60", s1H, a1H, b1H, w1H, "1H")
+    f_draw(on15, "15", s15, a15, b15, w15, "15m")
+    f_draw(on5, "5", s5, a5, b5, w5,  "5m")
