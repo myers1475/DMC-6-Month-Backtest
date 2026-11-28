@@ -71,6 +71,7 @@ type LvlSet
     array<int>   state
     array<bool>  armed   // price has left the level since it formed / flipped
     array<int>   dir     // used levels: direction price is travelling (1 up, -1 down)
+    int          done = 0  // open time of the last candle already processed
 
 f_new() =>
     LvlSet.new(array.new<float>(), array.new<int>(), array.new<int>(), array.new<int>(), array.new<bool>(), array.new<int>())
@@ -147,34 +148,45 @@ f_update(LvlSet s, float h, float l, float c) =>
         i -= 1
     true
 
-f_run(bool on, string tf, LvlSet s, float o1, float h1, float l1, float c1, float o2, float c2, int t1, bool newBar) =>
-    if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and newBar
-        f_update(s, h1, l1, c1)
-        if showTop and c2 > o2 and c1 < o1
-            f_add(s, o1, 1, t1)
-        if showBot and c2 < o2 and c1 > o1
-            f_add(s, o1, -1, t1)
+f_process(LvlSet s, float o1, float h1, float l1, float c1, float o2, float c2, int t1) =>
+    f_update(s, h1, l1, c1)
+    if showTop and c2 > o2 and c1 < o1
+        f_add(s, o1, 1, t1)
+    if showBot and c2 < o2 and c1 > o1
+        f_add(s, o1, -1, t1)
+    s.done := t1
     true
 
-// ── One request per timeframe (closed candles only)
+// A candle is processed as soon as it is finished: either the chart bar that ends it has closed
+// (also true for the last candle when the market is shut, e.g. the weekend), or, as a fallback,
+// when the next candle of that timeframe has started.
+f_run(bool on, string tf, LvlSet s, float o0, float h0, float l0, float c0, float oP, float cP, int t0, int tc0, float o1, float h1, float l1, float c1, float o2, float c2, int t1) =>
+    if on and timeframe.in_seconds(tf) >= timeframe.in_seconds()
+        if not na(t1) and t1 > s.done
+            f_process(s, o1, h1, l1, c1, o2, c2, t1)
+        if not na(t0) and not na(tc0) and t0 > s.done and barstate.isconfirmed and time_close >= tc0
+            f_process(s, o0, h0, l0, c0, oP, cP, t0)
+    true
+
+// ── One request per timeframe: the current candle (final values once it is finished) plus the two before it
 f_req(string tf) =>
-    request.security(syminfo.tickerid, tf, [open[1], high[1], low[1], close[1], open[2], close[2], time[1]], lookahead = barmerge.lookahead_on)
+    request.security(syminfo.tickerid, tf, [open, high, low, close, open[1], close[1], time, time_close, open[1], high[1], low[1], close[1], open[2], close[2], time[1]], lookahead = barmerge.lookahead_on)
 
-[oM1, hM1, lM1, cM1, oM2, cM2, tM1] = f_req("M")
-[oW1, hW1, lW1, cW1, oW2, cW2, tW1] = f_req("W")
-[oD1, hD1, lD1, cD1, oD2, cD2, tD1] = f_req("D")
-[o41, h41, l41, c41, o42, c42, t41] = f_req("240")
-[oH1, hH1, lH1, cH1, oH2, cH2, tH1] = f_req("60")
-[oF1, hF1, lF1, cF1, oF2, cF2, tF1] = f_req("15")
-[o51, h51, l51, c51, o52, c52, t51] = f_req("5")
+[oM0, hM0, lM0, cM0, oMP, cMP, tM0, xM0, oM1, hM1, lM1, cM1, oM2, cM2, tM1] = f_req("M")
+[oW0, hW0, lW0, cW0, oWP, cWP, tW0, xW0, oW1, hW1, lW1, cW1, oW2, cW2, tW1] = f_req("W")
+[oD0, hD0, lD0, cD0, oDP, cDP, tD0, xD0, oD1, hD1, lD1, cD1, oD2, cD2, tD1] = f_req("D")
+[o40, h40, l40, c40, o4P, c4P, t40, x40, o41, h41, l41, c41, o42, c42, t41] = f_req("240")
+[oH0, hH0, lH0, cH0, oHP, cHP, tH0, xH0, oH1, hH1, lH1, cH1, oH2, cH2, tH1] = f_req("60")
+[oF0, hF0, lF0, cF0, oFP, cFP, tF0, xF0, oF1, hF1, lF1, cF1, oF2, cF2, tF1] = f_req("15")
+[o50, h50, l50, c50, o5P, c5P, t50, x50, o51, h51, l51, c51, o52, c52, t51] = f_req("5")
 
-f_run(onM,  "M",   sM,  oM1, hM1, lM1, cM1, oM2, cM2, tM1, not na(tM1) and tM1 != nz(tM1[1]))
-f_run(onW,  "W",   sW,  oW1, hW1, lW1, cW1, oW2, cW2, tW1, not na(tW1) and tW1 != nz(tW1[1]))
-f_run(onD,  "D",   sD,  oD1, hD1, lD1, cD1, oD2, cD2, tD1, not na(tD1) and tD1 != nz(tD1[1]))
-f_run(on4H, "240", s4H, o41, h41, l41, c41, o42, c42, t41, not na(t41) and t41 != nz(t41[1]))
-f_run(on1H, "60",  s1H, oH1, hH1, lH1, cH1, oH2, cH2, tH1, not na(tH1) and tH1 != nz(tH1[1]))
-f_run(on15, "15",  s15, oF1, hF1, lF1, cF1, oF2, cF2, tF1, not na(tF1) and tF1 != nz(tF1[1]))
-f_run(on5,  "5",   s5,  o51, h51, l51, c51, o52, c52, t51, not na(t51) and t51 != nz(t51[1]))
+f_run(onM,  "M",   sM,  oM0, hM0, lM0, cM0, oMP, cMP, tM0, xM0, oM1, hM1, lM1, cM1, oM2, cM2, tM1)
+f_run(onW,  "W",   sW,  oW0, hW0, lW0, cW0, oWP, cWP, tW0, xW0, oW1, hW1, lW1, cW1, oW2, cW2, tW1)
+f_run(onD,  "D",   sD,  oD0, hD0, lD0, cD0, oDP, cDP, tD0, xD0, oD1, hD1, lD1, cD1, oD2, cD2, tD1)
+f_run(on4H, "240", s4H, o40, h40, l40, c40, o4P, c4P, t40, x40, o41, h41, l41, c41, o42, c42, t41)
+f_run(on1H, "60",  s1H, oH0, hH0, lH0, cH0, oHP, cHP, tH0, xH0, oH1, hH1, lH1, cH1, oH2, cH2, tH1)
+f_run(on15, "15",  s15, oF0, hF0, lF0, cF0, oFP, cFP, tF0, xF0, oF1, hF1, lF1, cF1, oF2, cF2, tF1)
+f_run(on5,  "5",   s5,  o50, h50, l50, c50, o5P, c5P, t50, x50, o51, h51, l51, c51, o52, c52, t51)
 
 // ── Draw the nearest levels above / below price per timeframe, redrawn on the latest bar
 var array<line>  drawnL = array.new<line>()
