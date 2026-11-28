@@ -123,28 +123,25 @@ f_update(LvlSet s, float h, float l, float c) =>
         bool  arm = array.get(s.armed, i)
         bool  touched = l <= px and h >= px
         bool  broke   = sd == 1 ? c > px : c < px
-        bool  gone = false
-        if st == 2
-            if broke                          // a used level closed through: flip its role, travel the way it broke
-                array.set(s.side, i, -sd)
+        if broke
+            array.set(s.side, i, -sd)                 // role flips on every close through
+            if st == 0
+                array.set(s.state, i, 1)              // first break: fresh flipped level
+                array.set(s.armed, i, false)
+            else
+                array.set(s.state, i, 2)              // flipped or used level broken: used, travelling the way it broke
                 array.set(s.dir, i, sd)
+        else if st != 2 and arm and touched
+            array.set(s.state, i, 2)                  // held: used, travelling away from it
+            array.set(s.dir, i, -sd)
+        else if st != 2 and not touched
+            array.set(s.armed, i, true)
+        bool gone = false
+        if array.get(s.state, i) == 2
             int   d  = array.get(s.dir, i)
             float nx = f_next(s, i, px, d)
             if not na(nx) and (d == 1 ? h >= nx : l <= nx)
                 gone := true
-        else if broke
-            if st == 0
-                array.set(s.side, i, -sd)
-                array.set(s.state, i, 1)
-                array.set(s.armed, i, false)
-            else
-                array.set(s.state, i, 2)
-                array.set(s.dir, i, sd)       // travelling the way it broke
-        else if arm and touched
-            array.set(s.state, i, 2)
-            array.set(s.dir, i, -sd)          // held: travelling away from it
-        else if not touched
-            array.set(s.armed, i, true)
         if gone
             f_remove(s, i)
         i -= 1
