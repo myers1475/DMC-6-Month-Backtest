@@ -42,7 +42,7 @@ int  w5    = input.int(2, "Width", minval = 1, maxval = 8, inline = "5", group =
 const string G_LV = "Levels"
 bool   showTop  = input.bool(true, "Top levels (bull → bear)", group = G_LV)
 bool   showBot  = input.bool(true, "Bottom levels (bear → bull)", group = G_LV)
-string onBreak  = input.string("Flip", "When a body closes through", options = ["Flip", "Remove", "Keep dashed"], group = G_LV, tooltip = "Checked on a closed candle of the level's own timeframe. Flip: lost support becomes resistance (bottom -> top color) and a gained top becomes support; it flips again on a close back through it. Remove: the level is deleted. Keep dashed: it stays in the broken color.")
+string onBreak  = input.string("Flip once", "When a body closes through", options = ["Flip once", "Remove", "Keep dashed"], group = G_LV, tooltip = "Checked on a closed candle of the level's own timeframe. Flip once: lost support becomes resistance (or gained resistance becomes support); a close back through the flipped level uses it up and removes it. Remove: deleted on the first break. Keep dashed: stays in the broken color.")
 
 // ── Colors & labels
 const string G_C = "Colors & labels"
@@ -60,9 +60,10 @@ type LvlSet
     array<int>   side   // 1 top, -1 bottom
     array<int>   t
     array<bool>  live
+    array<int>   flips
 
 f_new() =>
-    LvlSet.new(array.new<float>(), array.new<int>(), array.new<int>(), array.new<bool>())
+    LvlSet.new(array.new<float>(), array.new<int>(), array.new<int>(), array.new<bool>(), array.new<int>())
 
 var LvlSet sM  = f_new()
 var LvlSet sW  = f_new()
@@ -77,11 +78,13 @@ f_add(LvlSet s, float px, int side, int t) =>
     array.push(s.side, side)
     array.push(s.t, t)
     array.push(s.live, true)
+    array.push(s.flips, 0)
     if array.size(s.px) > STORE_CAP
         array.shift(s.px)
         array.shift(s.side)
         array.shift(s.t)
         array.shift(s.live)
+        array.shift(s.flips)
     true
 
 f_breaks(LvlSet s, float cl) =>
@@ -90,8 +93,9 @@ f_breaks(LvlSet s, float cl) =>
         float px = array.get(s.px, i)
         int   sd = array.get(s.side, i)
         if array.get(s.live, i) and (sd == 1 ? cl > px : cl < px)
-            if onBreak == "Flip"
+            if onBreak == "Flip once" and array.get(s.flips, i) == 0
                 array.set(s.side, i, -sd)
+                array.set(s.flips, i, 1)
             else if onBreak == "Keep dashed"
                 array.set(s.live, i, false)
             else
@@ -99,6 +103,7 @@ f_breaks(LvlSet s, float cl) =>
                 array.remove(s.side, i)
                 array.remove(s.t, i)
                 array.remove(s.live, i)
+                array.remove(s.flips, i)
         i -= 1
     true
 
