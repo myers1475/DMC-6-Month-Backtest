@@ -1,0 +1,159 @@
+// Trading Levels: where a long candle meets a short candle (bodies only, wicks ignored)
+// Bottom level: a bear candle followed by a bull candle -> the bull candle's OPEN
+// Top level:    a bull candle followed by a bear candle -> the bear candle's OPEN
+// Each timeframe is read on its own closed candles. Only the N levels nearest to price are drawn
+// per timeframe (N chosen in settings). Timeframes below the chart are skipped.
+
+//@version=6
+indicator("Trading Levels", shorttitle = "Trading Lvls", overlay = true, max_lines_count = 500, max_labels_count = 500)
+
+// ── Timeframes: show · how many nearest levels · line width
+const string G_TF = "Timeframes (show · nearest count · line width)"
+bool onM  = input.bool(true,  "Monthly", inline = "M",  group = G_TF)
+int  nM   = input.int(3, "", minval = 1, maxval = 50, inline = "M",  group = G_TF)
+int  wM   = input.int(5, "", minval = 1, maxval = 8,  inline = "M",  group = G_TF)
+bool onW  = input.bool(true,  "Weekly",  inline = "W",  group = G_TF)
+int  nW   = input.int(3, "", minval = 1, maxval = 50, inline = "W",  group = G_TF)
+int  wW   = input.int(4, "", minval = 1, maxval = 8,  inline = "W",  group = G_TF)
+bool onD  = input.bool(true,  "Daily",   inline = "D",  group = G_TF)
+int  nD   = input.int(3, "", minval = 1, maxval = 50, inline = "D",  group = G_TF)
+int  wD   = input.int(3, "", minval = 1, maxval = 8,  inline = "D",  group = G_TF)
+bool on4H = input.bool(true,  "4H",      inline = "4H", group = G_TF)
+int  n4H  = input.int(3, "", minval = 1, maxval = 50, inline = "4H", group = G_TF)
+int  w4H  = input.int(3, "", minval = 1, maxval = 8,  inline = "4H", group = G_TF)
+bool on1H = input.bool(true,  "1H",      inline = "1H", group = G_TF)
+int  n1H  = input.int(3, "", minval = 1, maxval = 50, inline = "1H", group = G_TF)
+int  w1H  = input.int(2, "", minval = 1, maxval = 8,  inline = "1H", group = G_TF)
+bool on15 = input.bool(false, "15m",     inline = "15", group = G_TF)
+int  n15  = input.int(3, "", minval = 1, maxval = 50, inline = "15", group = G_TF)
+int  w15  = input.int(2, "", minval = 1, maxval = 8,  inline = "15", group = G_TF)
+bool on5  = input.bool(false, "5m",      inline = "5",  group = G_TF)
+int  n5   = input.int(3, "", minval = 1, maxval = 50, inline = "5",  group = G_TF)
+int  w5   = input.int(2, "", minval = 1, maxval = 8,  inline = "5",  group = G_TF)
+
+// ── Levels
+const string G_LV = "Levels"
+bool   showTop  = input.bool(true, "Top levels (bull → bear)", group = G_LV)
+bool   showBot  = input.bool(true, "Bottom levels (bear → bull)", group = G_LV)
+bool   keepBrk  = input.bool(false, "Keep broken levels (dashed)", group = G_LV, tooltip = "Off: a level is removed once a candle of its own timeframe closes its body through it. On: it stays, dashed, and still counts as a nearest level.")
+
+// ── Colors & labels
+const string G_C = "Colors & labels"
+color cTop     = input.color(#FF9F1C, "Top level color", group = G_C)
+color cBot     = input.color(#00E5FF, "Bottom level color", group = G_C)
+color cBroken  = input.color(#B0B0B0, "Broken level color", group = G_C)
+bool  showLbl  = input.bool(true, "Labels (timeframe + price)", group = G_C)
+color cLblText = input.color(#000000, "Label text color", group = G_C)
+
+const int STORE_CAP = 300   // levels remembered per timeframe (oldest dropped first)
+
+// ── Storage
+type LvlSet
+    array<float> px
+    array<int>   side   // 1 top, -1 bottom
+    array<int>   t
+    array<bool>  live
+
+f_new() =>
+    LvlSet.new(array.new<float>(), array.new<int>(), array.new<int>(), array.new<bool>())
+
+var LvlSet sM  = f_new()
+var LvlSet sW  = f_new()
+var LvlSet sD  = f_new()
+var LvlSet s4H = f_new()
+var LvlSet s1H = f_new()
+var LvlSet s15 = f_new()
+var LvlSet s5  = f_new()
+
+f_add(LvlSet s, float px, int side, int t) =>
+    array.push(s.px, px)
+    array.push(s.side, side)
+    array.push(s.t, t)
+    array.push(s.live, true)
+    if array.size(s.px) > STORE_CAP
+        array.shift(s.px)
+        array.shift(s.side)
+        array.shift(s.t)
+        array.shift(s.live)
+    true
+
+f_breaks(LvlSet s, float cl) =>
+    int i = array.size(s.px) - 1
+    while i >= 0
+        float px = array.get(s.px, i)
+        int   sd = array.get(s.side, i)
+        if array.get(s.live, i) and (sd == 1 ? cl > px : cl < px)
+            if keepBrk
+                array.set(s.live, i, false)
+            else
+                array.remove(s.px, i)
+                array.remove(s.side, i)
+                array.remove(s.t, i)
+                array.remove(s.live, i)
+        i -= 1
+    true
+
+f_run(bool on, string tf, LvlSet s, float o1, float c1, float o2, float c2, int t1, bool newBar) =>
+    if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and newBar
+        f_breaks(s, c1)
+        if showTop and c2 > o2 and c1 < o1
+            f_add(s, o1, 1, t1)
+        if showBot and c2 < o2 and c1 > o1
+            f_add(s, o1, -1, t1)
+    true
+
+// ── One request per timeframe (closed candles only)
+f_req(string tf) =>
+    request.security(syminfo.tickerid, tf, [open[1], close[1], open[2], close[2], time[1]], lookahead = barmerge.lookahead_on)
+
+[oM1, cM1, oM2, cM2, tM1] = f_req("M")
+[oW1, cW1, oW2, cW2, tW1] = f_req("W")
+[oD1, cD1, oD2, cD2, tD1] = f_req("D")
+[o41, c41, o42, c42, t41] = f_req("240")
+[oH1, cH1, oH2, cH2, tH1] = f_req("60")
+[oF1, cF1, oF2, cF2, tF1] = f_req("15")
+[o51, c51, o52, c52, t51] = f_req("5")
+
+f_run(onM,  "M",   sM,  oM1, cM1, oM2, cM2, tM1, not na(tM1) and tM1 != nz(tM1[1]))
+f_run(onW,  "W",   sW,  oW1, cW1, oW2, cW2, tW1, not na(tW1) and tW1 != nz(tW1[1]))
+f_run(onD,  "D",   sD,  oD1, cD1, oD2, cD2, tD1, not na(tD1) and tD1 != nz(tD1[1]))
+f_run(on4H, "240", s4H, o41, c41, o42, c42, t41, not na(t41) and t41 != nz(t41[1]))
+f_run(on1H, "60",  s1H, oH1, cH1, oH2, cH2, tH1, not na(tH1) and tH1 != nz(tH1[1]))
+f_run(on15, "15",  s15, oF1, cF1, oF2, cF2, tF1, not na(tF1) and tF1 != nz(tF1[1]))
+f_run(on5,  "5",   s5,  o51, c51, o52, c52, t51, not na(t51) and t51 != nz(t51[1]))
+
+// ── Draw only the N nearest levels per timeframe, redrawn on the latest bar
+var array<line>  drawnL = array.new<line>()
+var array<label> drawnB = array.new<label>()
+
+f_draw(bool on, string tf, LvlSet s, int n, int w, string tag) =>
+    int sz = array.size(s.px)
+    if on and timeframe.in_seconds(tf) >= timeframe.in_seconds() and sz > 0
+        array<float> dist = array.new<float>()
+        for i = 0 to sz - 1
+            array.push(dist, math.abs(array.get(s.px, i) - close))
+        array<int> idx = array.sort_indices(dist, order.ascending)
+        for k = 0 to math.min(n, sz) - 1
+            int   j  = array.get(idx, k)
+            float px = array.get(s.px, j)
+            bool  lv = array.get(s.live, j)
+            color c  = not lv ? cBroken : array.get(s.side, j) == 1 ? cTop : cBot
+            array.push(drawnL, line.new(array.get(s.t, j), px, array.get(s.t, j) + 1, px, xloc = xloc.bar_time, extend = extend.right, color = c, width = w, style = lv ? line.style_solid : line.style_dashed))
+            if showLbl
+                array.push(drawnB, label.new(bar_index + 2, px, tag + " " + str.tostring(px, format.mintick), style = label.style_label_left, color = c, textcolor = cLblText, size = size.small))
+    true
+
+if barstate.islast
+    for l in drawnL
+        line.delete(l)
+    for b in drawnB
+        label.delete(b)
+    array.clear(drawnL)
+    array.clear(drawnB)
+    f_draw(onM,  "M",   sM,  nM,  wM,  "M")
+    f_draw(onW,  "W",   sW,  nW,  wW,  "W")
+    f_draw(onD,  "D",   sD,  nD,  wD,  "D")
+    f_draw(on4H, "240", s4H, n4H, w4H, "4H")
+    f_draw(on1H, "60",  s1H, n1H, w1H, "1H")
+    f_draw(on15, "15",  s15, n15, w15, "15m")
+    f_draw(on5,  "5",   s5,  n5,  w5,  "5m")
