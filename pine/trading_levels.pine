@@ -189,6 +189,7 @@ f_run(on15, "15",  s15, oF0, hF0, lF0, cF0, oFP, cFP, tF0, xF0, oF1, hF1, lF1, c
 f_run(on5,  "5",   s5,  o50, h50, l50, c50, o5P, c5P, t50, x50, o51, h51, l51, c51, o52, c52, t51)
 
 // ── Draw the nearest levels above / below price per timeframe, redrawn on the latest bar
+int prevT = nz(time[1], time - 60000)   // lines start at least one bar back so they always draw horizontally
 var array<line>  drawnL = array.new<line>()
 var array<label> drawnB = array.new<label>()
 
@@ -216,7 +217,7 @@ f_draw(bool on, string tf, LvlSet s, int nUp, int nDn, int w, string tag) =>
         for j in sel
             float px   = array.get(s.px, j)
             int   st   = array.get(s.state, j)
-            int   t0   = math.min(array.get(s.t, j), time - 1)
+            int   t0   = math.min(array.get(s.t, j), prevT)
             color c    = array.get(s.side, j) == 1 ? cTop : cBot
             string tg  = tag + (st == 1 ? " flip" : st == 2 ? " used" : "")
             array.push(drawnL, line.new(t0, px, time, px, xloc = xloc.bar_time, extend = extend.right, color = c, width = w, style = st == 2 ? line.style_dashed : line.style_solid))
