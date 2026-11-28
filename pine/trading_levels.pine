@@ -125,6 +125,9 @@ f_update(LvlSet s, float h, float l, float c) =>
         bool  broke   = sd == 1 ? c > px : c < px
         bool  gone = false
         if st == 2
+            if broke                          // a used level closed through: flip its role, travel the way it broke
+                array.set(s.side, i, -sd)
+                array.set(s.dir, i, sd)
             int   d  = array.get(s.dir, i)
             float nx = f_next(s, i, px, d)
             if not na(nx) and (d == 1 ? h >= nx : l <= nx)
