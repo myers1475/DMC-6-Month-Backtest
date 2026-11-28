@@ -164,7 +164,7 @@ f_run(bool on, string tf, LvlSet s, float o0, float h0, float l0, float c0, floa
     if on and timeframe.in_seconds(tf) >= timeframe.in_seconds()
         if not na(t1) and t1 > s.done
             f_process(s, o1, h1, l1, c1, o2, c2, t1)
-        if not na(t0) and not na(tc0) and t0 > s.done and barstate.isconfirmed and time_close >= tc0
+        if not na(t0) and not na(tc0) and t0 > s.done and time_close >= tc0 and (barstate.isconfirmed or timenow >= tc0)
             f_process(s, o0, h0, l0, c0, oP, cP, t0)
     true
 
