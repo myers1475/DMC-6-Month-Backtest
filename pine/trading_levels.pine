@@ -35,7 +35,7 @@ int  w5   = input.int(2, "", minval = 1, maxval = 8,  inline = "5",  group = G_T
 const string G_LV = "Levels"
 bool   showTop  = input.bool(true, "Top levels (bull → bear)", group = G_LV)
 bool   showBot  = input.bool(true, "Bottom levels (bear → bull)", group = G_LV)
-bool   keepBrk  = input.bool(false, "Keep broken levels (dashed)", group = G_LV, tooltip = "Off: a level is removed once a candle of its own timeframe closes its body through it. On: it stays, dashed, and still counts as a nearest level.")
+string onBreak  = input.string("Flip", "When a body closes through", options = ["Flip", "Remove", "Keep dashed"], group = G_LV, tooltip = "Checked on a closed candle of the level's own timeframe. Flip: lost support becomes resistance (bottom -> top color) and a gained top becomes support; it flips again on a close back through it. Remove: the level is deleted. Keep dashed: it stays in the broken color.")
 
 // ── Colors & labels
 const string G_C = "Colors & labels"
@@ -83,7 +83,9 @@ f_breaks(LvlSet s, float cl) =>
         float px = array.get(s.px, i)
         int   sd = array.get(s.side, i)
         if array.get(s.live, i) and (sd == 1 ? cl > px : cl < px)
-            if keepBrk
+            if onBreak == "Flip"
+                array.set(s.side, i, -sd)
+            else if onBreak == "Keep dashed"
                 array.set(s.live, i, false)
             else
                 array.remove(s.px, i)
